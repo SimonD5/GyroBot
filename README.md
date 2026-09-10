@@ -1,7 +1,7 @@
 # GyroBot
 
 <p align="center">
-  <img src="3D/v1/Global1.png" alt="GyroBot V1 concept" width="500">
+  <img src="3D/V1/Global1.png" alt="GyroBot V1 concept" width="500">
 </p>
 
 ## Overview
