@@ -7,7 +7,7 @@ The user will pilot the robot with a remote and will not have to worry about kee
 To make all of this possible, the robot must operate under specific technical constraints. The robot moves on only two wheels which makes it more maneuverable in small and tight places. To stay perfectly stable on its two contact points, it uses a gyroscope and carefully manages its own weight. The robot is also designed to drive on different types of outdoor surfaces like grass and dirt. The system must be compact with a height of about thirty centimeters and it needs to have a battery life of at least forty minutes to complete its missions.
 
 
-
+*Functional Analysis*
 
 In this project, the product is a two-wheeled robot that can either operate autonomously or be remotely controlled. The robot is configured and monitored through a Human-Machine Interface (HMI) that we designed and developed ourselves.
 
@@ -15,7 +15,7 @@ The main objective of this project is to enable a user to explore an unknown env
 
 The HMI provides the user with an overview of the robot's environment and allows them to monitor important information, control the robot remotely, and visualize the generated map. The project therefore combines robotics, autonomous navigation,  data processing, image processing, and human-machine interaction.
 
-![Diagramme Bête à cornes](Documents/betecorne.png)
+![Diagramme Bête à cornes](Diagrams/betecorne.png)
 *fig 1 : Functional Analysis Diagram (Horned Beast Diagram)*
 
 *fig 2 : Functional Interaction Diagram (Octopus Diagram)*
