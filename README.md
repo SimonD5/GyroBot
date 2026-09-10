@@ -87,18 +87,18 @@ The current 3D model is **not a final design**. It is a simple first version int
 ## Project Structure
 
 
+```text
 GyroBot/
 │
 ├── README.md
 │
-├── documentation/
-│   
+├── Documentation/
 │
 └── 3D/
-    └── v1/
-        
+    └── V1/
+```
 
 
 The `documentation` folder contains the analyses and diagrams produced during the preliminary design phase.
 
-The `3D/v1` folder contains the first conceptual 3D model of GyroBot.
+The `3D/V1` folder contains the first conceptual 3D model of GyroBot.
