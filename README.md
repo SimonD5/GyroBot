@@ -1,7 +1,7 @@
 # GyroBot
 
 <p align="center">
-  <img src="3D/V1/Global1.png" alt="GyroBot V1 concept" width="500">
+  <img src="3D/V1_Images/Global1.png" alt="GyroBot V1 concept" width="500">
 </p>
 
 ## Overview
@@ -99,6 +99,6 @@ GyroBot/
 ```
 
 
-The `documentation` folder contains the analyses and diagrams produced during the preliminary design phase.
+The `Documentation` folder contains the analyses and diagrams produced during the preliminary design phase.
 
 The `3D/V1` folder contains the first conceptual 3D model of GyroBot.

@@ -17,7 +17,7 @@ The HMI provides the user with an overview of the robot's environment and allows
 
 <div align="center">
 
-<img src="betecorne.png" alt="Diagramme Bête à cornes" width="500">
+<img src="Images/betecorne.png" alt="Diagramme Bête à cornes" width="500">
 
 *fig 1 : Functional Analysis Diagram (Horned Beast Diagram)*
 
@@ -25,7 +25,7 @@ The HMI provides the user with an overview of the robot's environment and allows
 
 <div align="center">
 
-<img src="pieuvre.png" alt="Diagramme pieuvre" width="1000">
+<img src="Images/pieuvre.png" alt="Diagramme pieuvre" width="1000">
 
 *fig 2 : Functional Interaction Diagram (Octopus Diagram)*
 
