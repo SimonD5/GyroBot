@@ -19,7 +19,7 @@ The HMI provides the user with an overview of the robot's environment and allows
 
 *fig 1 : Functional Analysis Diagram (Horned Beast Diagram)*
 
-<img src="Diagrams/pieuvre.png" alt="Diagramme pieuvre" width="700">
+<img src="Diagrams/pieuvre.png" alt="Diagramme pieuvre" width="1000">
 
 *fig 2 : Functional Interaction Diagram (Octopus Diagram)*
 
