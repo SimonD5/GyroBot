@@ -1,4 +1,4 @@
-##Use Case
+**Use Case**
 
 The goal of this project is to create an exploration and mapping robot. This system is designed to meet the needs of two main types of users. First, it can be used by the military as a guide for reconnaissance missions and topographic surveys on rough terrains. Second, it is highly useful for architects and the construction industry to map the inside of buildings and to help organize spaces. The main problem this robot solves is the ability to easily access and map areas that are usually hard to reach.
 
