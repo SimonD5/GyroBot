@@ -15,7 +15,7 @@ The main objective of this project is to enable a user to explore an unknown env
 
 The HMI provides the user with an overview of the robot's environment and allows them to monitor important information, control the robot remotely, and visualize the generated map. The project therefore combines robotics, autonomous navigation,  data processing, image processing, and human-machine interaction.
 
-![Diagramme Bête à cornes](Diagrams/betecorne.png)
+<img src="Diagrams/betecorne.png" alt="Diagramme Bête à cornes" width="500">
 *fig 1 : Functional Analysis Diagram (Horned Beast Diagram)*
 
 *fig 2 : Functional Interaction Diagram (Octopus Diagram)*
