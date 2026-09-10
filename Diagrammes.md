@@ -15,6 +15,7 @@ The main objective of this project is to enable a user to explore an unknown env
 
 The HMI provides the user with an overview of the robot's environment and allows them to monitor important information, control the robot remotely, and visualize the generated map. The project therefore combines robotics, autonomous navigation,  data processing, image processing, and human-machine interaction.
 
+![Diagramme Bête à cornes](Documents/betecorne.png)
 *fig 1 : Functional Analysis Diagram (Horned Beast Diagram)*
 
 *fig 2 : Functional Interaction Diagram (Octopus Diagram)*
@@ -39,7 +40,7 @@ FMEA is an analysis table that helps us figure out what could go wrong when our 
 | *Map system not working* | The robot cannot create the map or show it on the computer screen. | Something is blocking the Lidar sensor, or the computer software crashes. | 2 | 1 | 2 | 4 | Put a protective cover over the sensors and test the computer software many times. |
 
 *Legend:*
-* *G (Gravity/Severity)*: 1 to 4
+* *G (Severity)*: 1 to 4
 * *F (Frequency)*: 1 (Rare) to 4 (Frequent)
 * *D (Non-Detection)*: 1 (Immediately detectable) to 4 (Hard to predict)
 * *C (Criticality)* = G × F × D
