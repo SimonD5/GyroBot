@@ -61,9 +61,7 @@ The current objective is to develop a small and lightweight self-balancing robot
 | Number of wheels | 2                            |
 | Height           | ~20 cm                       |
 | Weight           | < 1 kg                       |
-| Balance          | Self-balancing               |
-| Platform         | Compact and modular          |
-| Current stage    | Concept / preliminary design |
+
 
 The dimensions and weight targets are preliminary and may evolve as the project progresses.
 
