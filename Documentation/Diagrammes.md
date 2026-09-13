@@ -60,7 +60,7 @@ FMEA is an analysis table that helps us figure out what could go wrong when our 
 
 <img src="Images/FAST.png" alt="FAST Diagram" width="500">
 
-*fig 1 : FAST Diagram*
+*fig 3 : FAST Diagram*
 
 </div>
 
@@ -68,7 +68,7 @@ FMEA is an analysis table that helps us figure out what could go wrong when our 
 
 <img src="Images/Octopus_Diagram.png" alt="Octopus_Diagram" width="500">
 
-*fig 1 : Octopus_Diagram (à revoir)*
+*fig 4 : Octopus_Diagram (à revoir)*
 
 </div>
 <div>
