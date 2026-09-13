@@ -71,7 +71,7 @@ FMEA is an analysis table that helps us figure out what could go wrong when our 
 *fig 4 : Octopus_Diagram (à revoir)*
 
 </div>
-<div>
+
 | Function | Description |
 | :--- | :--- |
 | **Mapping (FP1)** | Capture the user's environment. |
@@ -82,4 +82,3 @@ FMEA is an analysis table that helps us figure out what could go wrong when our 
 | **Weight management (FS1)** | The robot's weight must be properly distributed. |
 | **Show jumping (FS2)** | The robot must be able to jump in order to overcome obstacles. |
 | **Wireless connection (FS3)**| Data transmission must be wireless. |
-</div>
