@@ -55,3 +55,31 @@ FMEA is an analysis table that helps us figure out what could go wrong when our 
 * *F (Frequency)*: 1 (Rare) to 4 (Frequent)
 * *D (Non-Detection)*: 1 (Immediately detectable) to 4 (Hard to predict)
 * *C (Criticality)* = G × F × D
+
+<div align="center">
+
+<img src="Images/FAST.png" alt="FAST Diagram" width="500">
+
+*fig 1 : FAST Diagram*
+
+</div>
+
+<div align="center">
+
+<img src="Images/Octopus_Diagram.png" alt="Octopus_Diagram" width="500">
+
+*fig 1 : Octopus_Diagram (à revoir)*
+
+</div>
+<div>
+| Function | Description |
+| :--- | :--- |
+| **Mapping (FP1)** | Capture the user's environment. |
+| **Moving (FP2)** | The robot must be able to move within the environment so that mapping (FP1) is usable. |
+| **HMI (FP3)** | An HMI must display the information sent back by the robot in real-time. |
+| **Remote control (FP4)** | Must allow the robot to be controlled remotely. |
+| **Balance (FC1)** | The robot must balance itself on 2 wheels. |
+| **Weight management (FS1)** | The robot's weight must be properly distributed. |
+| **Show jumping (FS2)** | The robot must be able to jump in order to overcome obstacles. |
+| **Wireless connection (FS3)**| Data transmission must be wireless. |
+</div>
