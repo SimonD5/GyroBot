@@ -89,14 +89,24 @@ The current 3D model is **not a final design**. It is a simple first version int
 GyroBot/
 │
 ├── README.md
+|
+├── Gantt.xlsx
 │
 ├── Documentation/
+│   ├── Images/
+│   │   
+│   └── Diagrammes.md
 │
 └── 3D/
-    └── V1/
+    ├── V1_Images/
+    |
+    └── V1_stl/
 ```
 
 
 The `Documentation` folder contains the analyses and diagrams produced during the preliminary design phase.
 
-The `3D/V1` folder contains the first conceptual 3D model of GyroBot.
+
+The `Gantt.xlsx` file contains the Gantt chart for beginning of the project.
+
+The `3D/V1` folder contains the first conceptual 3D model and pictures of GyroBot.
