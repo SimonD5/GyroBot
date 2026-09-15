@@ -19,7 +19,7 @@ The HMI provides the user with an overview of the robot's environment and allows
 
 <img src="Images/betecorne.png" alt="Diagramme Bête à cornes" width="500">
 
-<u>*fig 1 : Functional Analysis Diagram (Horned Beast Diagram)*</u>
+<u><i>*fig 1 : Functional Analysis Diagram (Horned Beast Diagram)*</i></u>
 
 </div>
 
