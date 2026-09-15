@@ -58,7 +58,7 @@ FMEA is an analysis table that helps us figure out what could go wrong when our 
 
 <div align="center">
 
-<img src="Images/FAST.png" alt="FAST Diagram" width="700">
+<img src="Images/FAST.png" alt="FAST Diagram" width="900">
 
 *fig 3 : FAST Diagram*
 
