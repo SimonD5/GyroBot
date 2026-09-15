@@ -72,7 +72,7 @@ FMEA is an analysis table that helps us figure out what could go wrong when our 
 
 </div>
 
-| Function | Description |
+| Function | Description | Level |  |
 | :--- | :--- |
 | **Mapping (FP1)** | Capture the user's environment. |
 | **Moving (FP2)** | The robot must be able to move within the environment so that mapping (FP1) is usable. |
