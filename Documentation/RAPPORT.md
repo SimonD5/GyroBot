@@ -72,13 +72,26 @@ FMEA is an analysis table that helps us figure out what could go wrong when our 
 
 </div>
 
-| Function | Description | Criticality | Level |
-|---|---|---|---|
-| **Mapping (FP1)** | Capture the user's environment. | High | 1 |
-| **Moving (FP2)** | The robot must be able to move within the environment so that mapping (FP1) is usable. |  |  |
-| **HMI (FP3)** | An HMI must display the information sent back by the robot in real-time. | Medium | 2 |
-| **Remote control (FP4)** | Must allow the robot to be controlled remotely. |  |  |
-| **Balance (FC1)** | The robot must balance itself on 2 wheels. |  |  |
-| **Weight management (FS1)** | The robot's weight must be properly distributed. |  |  |
-| **Show jumping (FS2)** | The robot must be able to jump in order to overcome obstacles. |  |  |
-| **Wireless connection (FS3)** | Data transmission must be wireless. |  |  |
+# Service Functions Characterization - GyroBot
+
+| <span style="color: #33C1FF;">**Service function**</span> | <span style="color: #33C1FF;">**Criteria**</span> | <span style="color: #33C1FF;">**Level**</span> | <span style="color: #33C1FF;">**Tolerance**</span> |
+| :--- | :--- | :--- | :--- |
+| **Mapping (FP1) : Capture the user's environment** | Map accuracy / precision | 5 cm | ± 5cm |
+| | Lidar (.LAS) range | 10m | ± 2m |
+| **Moving (FP2) : The robot must be able to move within the environment so that mapping (FP1) is usable** | Slip | None | / |
+| | Tip-over / Fall | None | / |
+| | Speed | 4 km/h | ± 2 km/h |
+| | Minimum turning radius (at 4 km/h) | 0.5 m | ± 0.2m |
+| **HMI (FP3) : An HMI must display the information sent back by the robot in real-time** | Display latency | < 100 ms | / |
+| | Map refresh rate | 2 Hz | ± 1 Hz |
+| **Remote control (FP4) : Must allow the robot to be controlled remotely** | Radio control range | > 30 m (interior) | / |
+| | | > 150 m (exterior) | / |
+| | Command response time | < 50 ms | / |
+| **Balance (FC1) : The robot must balance itself on 2 wheels** | Maximum climbable slope | > 30° | / |
+| **Weight management (FS1) : The robot's weight must be properly distributed** | Center of Gravity (CoG) position | Centered, above the wheel axis | / |
+| | Maximum total weight | < 1 kg | / |
+| **Show jumping (FS2) : The robot must be able to jump in order to overcome obstacles** | Maximum obstacle height | 20 cm | ± 5cm |
+| | Success rate of landing without falling | 80% | ± 10% |
+| **Wireless connection (FS3) : Data transmission must be wireless** | Minimum bandwidth from the robot to remote control | > 30 kbps | / |
+| | Minimum bandwidth from the robot to the HMI | > 2 Mbps | / |
+| | Frequency | Wi-Fi 2.4 GHz | / |
