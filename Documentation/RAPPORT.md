@@ -98,7 +98,7 @@ FMEA is an analysis table that helps us figure out what could go wrong when our 
 
 <div align="center">
 
-<img src="Images/Flow chart.jpeg" alt="Flow chart" width="450" height="19000">
+<img src="Images/Flow chart.jpeg" alt="Flow chart" width="800" height="15000">
 
 </div>
 
