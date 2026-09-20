@@ -96,7 +96,7 @@ FMEA is an analysis table that helps us figure out what could go wrong when our 
 | | Minimum bandwidth from the robot to the HMI | > 2 Mbps | / |
 | | Frequency | Wi-Fi 2.4 GHz | / |
 <div style="
-    width: 60000px;
+    width: 600px;
     height: 80000px;
     border: 1px solid black;
     padding: 10px;
