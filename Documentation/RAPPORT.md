@@ -97,7 +97,6 @@ FMEA is an analysis table that helps us figure out what could go wrong when our 
 | | Frequency | Wi-Fi 2.4 GHz | / |
 
 
-<img src="Images/Flow chart.jpeg" alt="Flow chart" width="10000">
-
+<img src="Images/Flow chart.jpeg" alt="Flow chart" width="800" height="6000">
 
 <u>*fig 5 : Flow chart*</u>
