@@ -97,7 +97,7 @@ FMEA is an analysis table that helps us figure out what could go wrong when our 
 | | Frequency | Wi-Fi 2.4 GHz | / |
 <div style="
     width: 60000px;
-    height: 800px;
+    height: 8000px;
     border: 1px solid black;
     padding: 10px;
 ">
