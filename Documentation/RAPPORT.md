@@ -95,3 +95,8 @@ FMEA is an analysis table that helps us figure out what could go wrong when our 
 | **Wireless connection (FS3) : Data transmission must be wireless** | Minimum bandwidth from the robot to remote control | > 30 kbps | / |
 | | Minimum bandwidth from the robot to the HMI | > 2 Mbps | / |
 | | Frequency | Wi-Fi 2.4 GHz | / |
+
+
+<img src="Images/Flow chart.jpeg" alt="Flow chart" width="1000">
+
+<u>*fig 5 : Flow chart*</u>
