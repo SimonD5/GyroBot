@@ -100,6 +100,5 @@ FMEA is an analysis table that helps us figure out what could go wrong when our 
 
 <img src="Images/Flow chart.jpeg" alt="Flow chart" width="450" height="3000">
 
-</div>
-
 <u>*fig 5 : Flow chart*</u>
+</div>
