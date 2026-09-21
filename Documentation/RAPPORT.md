@@ -87,7 +87,12 @@ FMEA is an analysis table that helps us figure out what could go wrong when our 
 | **Remote control (FP4) : Must allow the robot to be controlled remotely** | Radio control range | > 30 m (interior) | / |
 | | | > 150 m (exterior) | / |
 | | Command response time | < 50 ms | / |
+| **Battery replacement (FP5) : Allow the user to replace and handle the battery** | Replacement time | < 1 min | / |
 | **Balance (FC1) : The robot must balance itself on 2 wheels** | Maximum climbable slope | > 30° | / |
+| **Accessibility and safety (FC2) : Facilitate access and ensure safe handling** | Tools required for access | None  | / |
+| | Connector safety | ? | / |
+| **Power supply (FC3) : Supply electrical power** | Minimum autonomy | ? | / |
+| | Nominal voltage | ? | / |
 | **Weight management (FS1) : The robot's weight must be properly distributed** | Center of Gravity (CoG) position | Centered, above the wheel axis | / |
 | | Maximum total weight | < 1 kg | / |
 | **Show jumping (FS2) : The robot must be able to jump in order to overcome obstacles** | Maximum obstacle height | 20 cm | ± 5cm |
