@@ -1,0 +1,150 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Gyrobot · IHM PC (aperçu)</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#CDE9FF;--blue:#3B8CF0;--card:#FBF9F3;--panel:#EAF3FF;--ink:#0B1F5C;--mute:#4A5A9A;--line:#0B1F5C;--cy:#22C3F0;--or:#F0A93A;--rd:#E5484D;--gn:#2FB37A;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0B1433;--blue:#2C5FBE;--card:#16224F;--panel:#1E2D66;--ink:#EAF1FF;--mute:#9DB2E8;--line:#050B22}}
+:root[data-theme="dark"]{--bg:#0B1433;--blue:#2C5FBE;--card:#16224F;--panel:#1E2D66;--ink:#EAF1FF;--mute:#9DB2E8;--line:#050B22}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}*,*:before,*:after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:600 14px/1.45 Nunito,system-ui,"Trebuchet MS",sans-serif}
+button,input{font:800 13px Nunito,system-ui,sans-serif}
+button{border:2.5px solid var(--line);border-radius:99px;background:var(--cy);color:#0B1F5C;padding:6px 16px;cursor:pointer}
+button.sec{background:var(--card);color:var(--ink)}button.dg{background:var(--rd);color:#fff}
+button:disabled,input:disabled{opacity:.45;cursor:not-allowed}
+input[type=range]{width:100%;accent-color:var(--blue);margin:2px 0 8px}
+input[type=text]{flex:1;border:2.5px solid var(--line);border-radius:99px;padding:7px 14px;background:var(--card);color:var(--ink)}
+.app{max-width:1440px;margin:0 auto;padding:14px;display:grid;gap:16px;grid-template-columns:230px minmax(0,1fr)}
+.top{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:8px;background:var(--blue);border:3px solid var(--line);border-radius:32px;padding:10px 18px;color:#fff}
+.logo{font-size:20px;font-weight:800;letter-spacing:3px;display:flex;align-items:center;gap:10px;margin-right:8px}.sp{flex:1}
+.ch{display:inline-flex;align-items:center;gap:6px;border:2px solid var(--line);background:var(--card);color:var(--ink);border-radius:99px;padding:1px 10px;font-size:12px;font-weight:800}
+.ch:before{content:"";width:8px;height:8px;border-radius:50%;background:var(--gn)}.ch.or:before{background:var(--or)}.ch.nd:before{display:none}
+#tk{background:var(--or)}
+.wing{background:var(--blue);border:3px solid var(--line);border-radius:46px 46px 80px 80px;padding:16px 12px 20px;display:flex;flex-direction:column;gap:6px;align-self:start;color:#fff}
+.wing button{text-align:left;background:transparent;color:#fff;border-color:transparent;border-radius:24px;padding:9px 16px;display:flex;flex-direction:column;font-size:16px}
+.wing button small{font-weight:600;font-size:12px}.wing button.on{background:var(--card);color:var(--ink);border-color:var(--line)}
+.wing .c{color:var(--ink);margin-top:10px;font-size:12px}
+.main{background:var(--card);border:3px solid var(--line);border-radius:50px;padding:22px;min-height:72vh}
+.tab{display:none}.tab.on{display:block}
+.g{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));margin-top:14px}
+.split{display:grid;gap:14px;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);margin-top:0}
+.c{background:var(--panel);border:2.5px solid var(--line);border-radius:24px;padding:14px 18px}
+.c h3{margin:0 0 8px;font-size:15px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.kv{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1.5px dotted var(--mute)}.kv span{color:var(--mute)}.kv b{font-weight:800}
+.bar{height:12px;border-radius:9px;background:var(--card);border:2px solid var(--line);overflow:hidden;margin:4px 0 8px}.bar i{display:block;height:100%;background:var(--gn)}
+.lg{display:inline-flex;align-items:center;gap:5px;font-size:12px;margin-right:10px}.lg i{width:14px;height:5px;border-radius:3px}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.note{font-size:12px;color:var(--mute);margin:8px 0 0}
+svg{display:block;width:100%;height:auto}.hit{cursor:pointer}.hit:hover{opacity:.82}svg text.tx{font:600 11px Nunito,sans-serif;fill:var(--mute)}.gr{stroke:var(--mute);stroke-opacity:.35}
+.lc{font:800 13px Nunito,sans-serif;fill:#22C3F0}.lv{font:800 22px Nunito,sans-serif;fill:#fff}.bk{font:800 15px Nunito,sans-serif;fill:#0B1F5C}.cp{font:800 15px Nunito,sans-serif;fill:var(--ink)}
+#log{background:#0B1F5C;color:#EAF1FF;border-radius:14px;padding:10px 12px;font:500 12.5px/1.6 ui-monospace,Consolas,monospace;height:290px;overflow:auto}
+.l span{color:#8FA6E0;margin-right:10px}.l b{margin-right:10px}.OK b{color:#5DE08A}.INFO b{color:#22C3F0}.WARN b{color:#F0A93A}.ERR b{color:#FF7A7A}
+#log.hOK .OK,#log.hINFO .INFO,#log.hWARN .WARN,#log.hERR .ERR{display:none}
+.cam{position:relative;border:2.5px solid var(--line);border-radius:14px;overflow:hidden}.cam:after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.1) 0 1px,transparent 1px 3px)}
+table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:4px 6px;border-bottom:1.5px dotted var(--mute)}th{color:var(--mute)}
+body:not(.pc) .pcs{display:none}body.pc .ro{display:none}
+@media(max-width:820px){.app{grid-template-columns:1fr}.split{grid-template-columns:1fr}.wing{flex-direction:row;overflow-x:auto;border-radius:32px}.main{border-radius:32px}}
+</style></head><body>
+<div class="app">
+<header class="top"><b class="logo"><svg width="34" height="34" viewBox="0 0 34 34"><circle cx="17" cy="17" r="15" fill="#3B8CF0" stroke="#0B1F5C" stroke-width="2.5"/><path d="M17 12C11 6 5 12 6 19C8 27 26 27 28 19C29 12 23 6 17 12Z" fill="#fff"/><circle cx="12" cy="18" r="2" fill="#0B1F5C"/><circle cx="22" cy="18" r="2" fill="#0B1F5C"/><path d="M14.5 21Q17 19 19.5 21Q17 24 14.5 21Z" fill="#F0A93A"/></svg>GYROBOT</b><span class="ch">Robot connecté</span><span class="ch">Liaison 2,4 GHz</span><span class="ch">Latence 18 ms</span><span class="ch">Firmware v0.3.1</span><span class="sp"></span><span id="mode" class="ch or">Lecture seule · télécommande active</span><button id="tk">Prendre la main</button></header>
+<nav class="wing"><button data-t="t6">Connexion<small>Liaison carte</small></button><button data-t="t7">Init/Calib<small>Calibration capteurs</small></button><button data-t="t1" class="on">Tête<small>Tableau de bord</small></button><button data-t="t2">Yeux<small>Lidar et caméra</small></button><button data-t="t3">Cœur<small>Télémétrie</small></button><button data-t="t4">Pattes<small>PID et moteurs</small></button><button data-t="t5">Bec<small>Console de debug</small></button>
+<div class="c"><h3>Session</h3><div class="kv"><span>Enregistrement</span><b>00:12:41</b></div><div class="kv"><span>Fichier log</span><b>run_042.csv</b></div><div class="row"><button class="sec">Pause</button><button class="sec">Marquer</button></div></div></nav>
+<main class="main">
+
+<section id="t6" class="tab"><div class="split">
+<div class="c"><h3>Connexion série</h3><div class="kv"><span>Port</span><b>/dev/ttyUSB0</b></div><div class="kv"><span>Débit</span><b>115200 bauds</b></div><div class="kv"><span>État</span><b>Connecté</b></div><div class="row"><button class="sec">Rafraîchir les ports</button><button>Connecter</button><button class="dg">Déconnecter</button></div><p class="note">Sélectionne le port série de la carte puis connecte-toi pour activer la liaison télémétrie ↔ PC.</p></div>
+<div style="display:grid;gap:14px;align-content:start">
+<div class="c"><h3>Carte détectée</h3><div class="kv"><span>Modèle</span><b>ESP32-S3</b></div><div class="kv"><span>Firmware</span><b>v0.3.1</b></div><div class="kv"><span>ID série</span><b>GB-0427</b></div></div>
+<div class="c"><h3>Étapes de connexion</h3><div class="kv"><span>1 · Détection carte</span><b>OK</b></div><div class="kv"><span>2 · Ouverture port</span><b>OK</b></div><div class="kv"><span>3 · Handshake</span><b>OK</b></div><div class="kv"><span>4 · Flux télémétrie</span><b>20 Hz</b></div></div>
+</div></div></section>
+<section id="t7" class="tab"><div class="split">
+<div class="c"><h3>Étapes de calibration</h3><div class="kv"><span>1 · Calibration IMU (à plat, immobile)</span><b>OK</b></div><div class="kv"><span>2 · Zéro lidar</span><b>OK</b></div><div class="kv"><span>3 · Test moteurs G/D</span><b>OK</b></div><div class="kv"><span>4 · Équilibre initial</span><b>En cours…</b></div><div class="bar"><i style="width:75%"></i></div><div class="row"><button class="sec">Calibrer IMU</button><button class="sec">Zéro lidar</button><button class="sec">Test moteurs</button><button>Lancer la séquence</button></div></div>
+<div style="display:grid;gap:14px;align-content:start">
+<div class="c"><h3>Biais mesurés</h3><div class="kv"><span>Gyro X/Y/Z</span><b>0,02 / −0,01 / 0,00 °/s</b></div><div class="kv"><span>Offset angle</span><b>0,3°</b></div></div>
+<div class="c"><h3>Avant de démarrer</h3><div class="kv"><span>Robot posé au sol</span><b>✓</b></div><div class="kv"><span>Roues libres</span><b>✓</b></div><div class="kv"><span>Zone dégagée 1 m</span><b>✓</b></div></div>
+</div></div></section>
+
+<section id="t1" class="tab on">
+<svg viewBox="0 -40 1000 480" role="img" aria-label="Tête de manchot bionique, cliquable : yeux vers lidar/caméra, bec vers console, antenne vers connexion, engrenage vers calibration, pattes vers moteurs">
+<ellipse cx="500" cy="424" rx="270" ry="9" fill="#000" opacity=".14"/>
+<g stroke="var(--line)" stroke-width="4" stroke-linejoin="round"><path d="M430 26Q408-20 462 2Q456 30 430 26Z" fill="var(--blue)"/><path d="M500 14Q486-36 542-2Q528 26 500 14Z" fill="var(--blue)"/><path d="M568 26Q574-18 614 6Q594 32 568 26Z" fill="var(--blue)"/></g>
+<path d="M60 260C60 100 250 10 500 10C750 10 940 100 940 260C940 400 780 435 500 435C220 435 60 400 60 260Z" fill="var(--blue)" stroke="var(--line)" stroke-width="5"/>
+<path d="M500 105C440 45 300 35 205 85C110 135 70 250 110 320C160 400 300 420 500 420C700 420 840 400 890 320C930 250 890 135 795 85C700 35 560 45 500 105Z" fill="var(--card)" stroke="var(--line)" stroke-width="5"/>
+<circle cx="310" cy="290" r="150" fill="var(--blue)" opacity=".12"/><circle cx="690" cy="290" r="150" fill="var(--blue)" opacity=".12"/>
+<path d="M150 250V170H392L428 205H572L608 170H850V250" fill="none" stroke="#22C3F0" stroke-width="8" stroke-linejoin="round"/>
+<g class="hit" data-t="t6"><rect x="118" y="100" width="44" height="44" rx="6" fill="none" stroke="#22C3F0" stroke-width="4"/><path d="M128 136V124M140 136V114M152 136V128" stroke="#22C3F0" stroke-width="5" fill="none"/></g>
+<g class="hit" data-t="t7"><circle cx="860" cy="122" r="20" fill="none" stroke="#22C3F0" stroke-width="4"/><circle cx="860" cy="122" r="6" fill="#22C3F0"/><g stroke="#22C3F0" stroke-width="4"><path d="M860 102V88M860 142V156M840 122H826M880 122H894M874 108L884 98M846 108L836 98M874 136L884 146M846 136L836 146"/></g></g>
+<g class="hit" data-t="t2"><circle cx="310" cy="365" r="26" fill="none" stroke="#22C3F0" stroke-width="4" stroke-dasharray="4 5"/><circle cx="310" cy="285" r="106" fill="none" stroke="#22C3F0" stroke-width="4" stroke-dasharray="4 8"/><circle cx="310" cy="285" r="96" fill="#0B1F5C" stroke="#22C3F0" stroke-width="6"/><g transform="translate(310 285)"><g fill="none" stroke="#22C3F0" stroke-opacity=".4"><circle r="28"/><circle r="56"/><circle r="84"/></g><path d="M0 0L-32-68A75 75 0 0 1 32-68Z" fill="#22C3F0" fill-opacity=".18"/><g id="m1"></g><path d="M0-9L-7 8H7Z" fill="#F0A93A"/></g><circle cx="262" cy="232" r="9" fill="#fff"/></g>
+<g class="hit" data-t="t2"><circle cx="690" cy="365" r="26" fill="none" stroke="#22C3F0" stroke-width="4" stroke-dasharray="4 5"/><circle cx="690" cy="285" r="106" fill="none" stroke="#22C3F0" stroke-width="4" stroke-dasharray="4 8"/><circle cx="690" cy="285" r="96" fill="#0B1F5C" stroke="#22C3F0" stroke-width="6"/><clipPath id="eyeR"><circle cx="690" cy="285" r="88"/></clipPath><g clip-path="url(#eyeR)"><g id="camPix"></g></g><rect x="646" y="336" width="88" height="22" rx="11" fill="#0B1F5C" stroke="#22C3F0" stroke-width="2"/><text x="690" y="351" text-anchor="middle" style="font:800 11px Nunito,sans-serif;fill:#22C3F0">CAM · 5 Hz</text><circle cx="642" cy="232" r="9" fill="#fff" fill-opacity=".9"/></g>
+<g class="hit" data-t="t5"><path d="M452 300Q500 262 548 300Q500 345 452 300Z" fill="#F0A93A" stroke="#0B1F5C" stroke-width="4"/><text id="bk" x="500" y="307" text-anchor="middle" class="bk">RC</text><path d="M474 320Q500 332 526 320" fill="none" stroke="#0B1F5C" stroke-width="3" stroke-linecap="round"/></g>
+<text id="cap" x="500" y="378" text-anchor="middle" class="cp">Télécommande active</text>
+<g class="hit" data-t="t4"><path d="M405 418Q384 428 392 440H428Q434 426 420 418Z" fill="#F0A93A" stroke="var(--line)" stroke-width="3"/><path d="M595 418Q616 428 608 440H572Q566 426 580 418Z" fill="#F0A93A" stroke="var(--line)" stroke-width="3"/></g>
+</svg>
+<div class="g">
+<div class="c"><h3>État du robot <span class="ch nd">Prêt</span></h3><div class="kv"><span>Équilibre</span><b>Stable</b></div><div class="kv"><span>Boucle de contrôle</span><b>200 Hz</b></div><div class="kv"><span>Temps de marche</span><b>00:12:41</b></div><div class="kv"><span>Batterie 3S</span><b>12,1 V · 87 %</b></div><div class="bar"><i style="width:87%"></i></div></div>
+<div class="c"><h3>Orientation</h3><div class="kv"><span>Inclinaison</span><b>2,1°</b></div><div class="kv"><span>Vitesse angulaire</span><b>0,8 °/s</b></div><div class="kv"><span>Vitesse roue G / D</span><b>0,34 / 0,36 m/s</b></div><div class="kv"><span>Cap</span><b>127°</b></div></div>
+<div class="c"><h3>Liaison</h3><div class="kv"><span>Télécommande → robot</span><b>OK</b></div><div class="kv"><span>Robot → PC</span><b>20 Hz</b></div><div class="kv"><span>Signal (RSSI)</span><b>−52 dBm</b></div><div class="kv"><span>Paquets perdus</span><b>0,3 %</b></div></div>
+<div class="c"><h3>Lidar</h3><div class="kv"><span>Fréquence</span><b>8 Hz</b></div><div class="kv"><span>Points par tour</span><b>360</b></div><div class="kv"><span>Obstacle le plus proche</span><b>0,42 m · AV gauche</b></div><div class="kv"><span>Surface cartographiée</span><b>14,2 m²</b></div></div>
+<div class="c" style="grid-column:1/-1"><h3>Événements récents</h3><div class="kv"><span>12:47:16</span><b>Caméra reprise · 2 Hz</b></div><div class="kv"><span>12:46:37</span><b>Batterie sous 90 %</b></div><div class="kv"><span>12:44:02</span><b>Obstacle à 0,42 m · avant gauche</b></div></div>
+</div></section>
+
+<section id="t2" class="tab"><div class="split">
+<div class="c"><h3>Carte lidar <span><span class="ch nd">8 Hz</span> <span class="ch nd">Robot au centre</span></span></h3>
+<svg viewBox="0 0 600 520" role="img" aria-label="Carte lidar en cours de construction"><rect width="600" height="520" rx="18" fill="#0B1F5C"/><g transform="translate(300 260)"><g fill="none" stroke="#22C3F0" stroke-opacity=".4"><circle r="85"/><circle r="170"/><circle r="255"/><path d="M0-255V255M-290 0H290"/></g><g fill="#22C3F0" font-size="11" font-family="Nunito,sans-serif"><text x="4" y="-88">1 m</text><text x="4" y="-173">2 m</text><text x="4" y="-238">3 m</text></g><path d="M0 0L-108-215A240 240 0 0 1 108-215Z" fill="#22C3F0" fill-opacity=".14"/><g id="m2"></g><path d="M0-16L-11 12H11Z" fill="#F0A93A" stroke="#fff" stroke-width="1.5"/></g></svg>
+<div class="row"><button class="sec">Centrer</button><button class="sec">Zoom −</button><button class="sec">Zoom +</button><button class="sec">Exporter PNG</button><button class="sec">Exporter CSV</button></div></div>
+<div style="display:grid;gap:14px;align-content:start">
+<div class="c"><h3>Caméra avant <span class="ch nd">2 Hz</span></h3><div class="cam"><svg viewBox="0 0 160 120"><rect width="160" height="120" fill="#8DA2C8"/><polygon points="0,0 52,38 52,84 0,120" fill="#6F86B4"/><polygon points="160,0 108,38 108,84 160,120" fill="#7A90BC"/><rect x="52" y="38" width="56" height="46" fill="#A9BAD9"/><rect x="72" y="50" width="16" height="34" fill="#F0A93A"/><polygon points="0,120 52,84 108,84 160,120" fill="#5B6FA0"/></svg></div><div class="row"><span class="ch nd">160×120</span><span class="ch nd">Âge 0,4 s</span><span class="ch nd">1 · 2 · 5 Hz</span></div></div>
+<div class="c"><h3>Distances lidar</h3><div class="kv"><span>Avant</span><b>1,85 m</b></div><div class="bar"><i style="width:62%"></i></div><div class="kv"><span>Gauche</span><b>0,42 m</b></div><div class="bar"><i style="width:14%;background:var(--or)"></i></div><div class="kv"><span>Droite</span><b>1,10 m</b></div><div class="bar"><i style="width:37%"></i></div><div class="kv"><span>Arrière</span><b>2,30 m</b></div><div class="bar"><i style="width:77%"></i></div></div>
+</div></div></section>
+
+<section id="t3" class="tab"><div class="g" style="margin-top:0;grid-template-columns:repeat(auto-fit,minmax(420px,1fr))">
+<div class="c"><h3>Inclinaison (°)</h3><svg id="c1" viewBox="0 0 560 200"></svg><span class="lg"><i style="background:#22C3F0"></i>mesure</span><span class="lg"><i style="background:#F0A93A"></i>consigne</span></div>
+<div class="c"><h3>Vitesse des roues (m/s)</h3><svg id="c2" viewBox="0 0 560 200"></svg><span class="lg"><i style="background:#22C3F0"></i>gauche</span><span class="lg"><i style="background:#2FB37A"></i>droite</span></div>
+<div class="c"><h3>Commande moteurs (%)</h3><svg id="c3" viewBox="0 0 560 200"></svg><span class="lg"><i style="background:#22C3F0"></i>gauche</span><span class="lg"><i style="background:#2FB37A"></i>droite</span></div>
+<div class="c"><h3>Alimentation et températures</h3><div class="kv"><span>Tension batterie</span><b>12,1 V</b></div><div class="kv"><span>Courant</span><b>1,8 A</b></div><div class="kv"><span>Driver G</span><b>41 °C</b></div><div class="kv"><span>Driver D</span><b>43 °C</b></div><div class="kv"><span>IMU</span><b>34 °C</b></div><div class="kv"><span>Batterie</span><b>29 °C</b></div></div>
+</div></section>
+
+<section id="t4" class="tab"><div class="split">
+<div class="c"><h3>Régulation d'équilibre <span><span class="ch nd ro">Lecture seule</span><span class="ch nd pcs">Écriture PC active</span></span></h3>
+<div class="kv"><span>Boucle angle · Kp</span><b>18,50</b></div><input class="pin" type="range" min="0" max="40" step=".5" value="18.5" disabled>
+<div class="kv"><span>Boucle angle · Ki</span><b>0,40</b></div><input class="pin" type="range" min="0" max="5" step=".05" value=".4" disabled>
+<div class="kv"><span>Boucle angle · Kd</span><b>1,20</b></div><input class="pin" type="range" min="0" max="10" step=".05" value="1.2" disabled>
+<div class="kv"><span>Boucle vitesse · Kp</span><b>0,60</b></div><input class="pin" type="range" min="0" max="5" step=".05" value=".6" disabled>
+<div class="kv"><span>Boucle vitesse · Ki</span><b>0,08</b></div><input class="pin" type="range" min="0" max="1" step=".01" value=".08" disabled>
+<div class="row"><button class="pin" disabled>Appliquer au robot</button><button class="sec pin" disabled>Enregistrer le profil</button></div>
+<p class="note ro">Les valeurs affichées sont celles reçues du robot. Pour les modifier, prends la main depuis le bandeau du haut : la télécommande passe alors en veille.</p></div>
+<div style="display:grid;gap:14px;align-content:start">
+<div class="c"><h3>Profils</h3><div class="row" style="margin:0"><button class="sec pin" disabled>Défaut</button><button class="sec pin" disabled>Sol lisse</button><button class="sec pin" disabled>Moquette</button></div><div class="kv" style="margin-top:8px"><span>Profil actif</span><b>Défaut</b></div></div>
+<div class="c"><h3>Limites</h3><div class="kv"><span>Angle de coupure</span><b>±35°</b></div><div class="kv"><span>Couple max</span><b>60 %</b></div><div class="kv"><span>Rampe d'accélération</span><b>0,5 m/s²</b></div></div>
+<div class="c"><h3>Moteurs</h3><div class="kv"><span>Gauche</span><b>42 %</b></div><div class="bar"><i style="width:42%"></i></div><div class="kv"><span>Droit</span><b>45 %</b></div><div class="bar"><i style="width:45%"></i></div></div>
+</div></div></section>
+
+<section id="t5" class="tab"><div class="split">
+<div class="c"><h3>Console <span class="row" style="margin:0"><button class="sec f" data-f="OK">OK</button><button class="sec f" data-f="INFO">INFO</button><button class="sec f" data-f="WARN">WARN</button><button class="sec f" data-f="ERR">ERR</button></span></h3><div id="log"></div>
+<div class="row"><input class="pin" type="text" disabled placeholder="Sortie seule : prends la main pour envoyer une commande"><button class="pin" disabled>Envoyer</button></div>
+<div class="row"><button class="sec pin" disabled>Calibrer IMU</button><button class="sec pin" disabled>Zéro lidar</button><button class="sec pin" disabled>Réinitialiser la carte</button><button class="dg pin" disabled>Arrêt d'urgence</button></div></div>
+<div style="display:grid;gap:14px;align-content:start">
+<div class="c"><h3>Trames reçues</h3><table><tr><th>Trame</th><th>Cadence</th><th>Dernière</th></tr><tr><td>IMU</td><td>20 Hz</td><td>12 ms</td></tr><tr><td>ODOM</td><td>20 Hz</td><td>14 ms</td></tr><tr><td>LIDAR</td><td>8 Hz</td><td>96 ms</td></tr><tr><td>CAM</td><td>2 Hz</td><td>410 ms</td></tr><tr><td>STATUS</td><td>5 Hz</td><td>120 ms</td></tr><tr><td>BATT</td><td>1 Hz</td><td>640 ms</td></tr></table></div>
+<div class="c"><h3>Liaison série</h3><div class="kv"><span>Port</span><b>/dev/ttyUSB0</b></div><div class="kv"><span>Débit</span><b>115200 bauds</b></div><div class="kv"><span>Octets reçus</span><b>1,4 Mo</b></div></div>
+</div></div></section>
+
+</main></div>
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+$$('.wing button').forEach(b=>b.onclick=()=>{$$('.wing button,.tab').forEach(x=>x.classList.remove('on'));b.classList.add('on');$('#'+b.dataset.t).classList.add('on')});
+$('#tk').onclick=()=>{const p=document.body.classList.toggle('pc');$('#tk').textContent=p?'Rendre à la télécommande':'Prendre la main';$('#mode').textContent=p?'PC aux commandes · télécommande en veille':'Lecture seule · télécommande active';$('#cap').textContent=p?'PC aux commandes':'Télécommande active';$('#bk').textContent=p?'PC':'RC';$('#mode').classList.toggle('or',!p);$$('.pin').forEach(i=>{i.disabled=!p});$$('input.pin[type=text]').forEach(i=>i.placeholder=p?'Commande (ex. M114)':'Sortie seule : prends la main pour envoyer une commande')};
+$$('input[type=range]').forEach(i=>i.oninput=()=>i.previousElementSibling.querySelector('b').textContent=(+i.value).toFixed(2).replace('.',','));
+const R=[[-2.2,2],[.4,2.6],[2.1,2.2],[2.5,-.4],[2,-2.3],[-1.4,-2.6],[-2.5,-1]],O=[[.8,.6],[1.6,.6],[1.6,1.5],[.8,1.5]];
+function dots(P,sc,r,f){let s='';P.forEach((a,i)=>{const b=P[(i+1)%P.length],k=Math.floor(Math.hypot(b[0]-a[0],b[1]-a[1])/.1);for(let j=0;j<k;j++){const t=j/k,x=a[0]+(b[0]-a[0])*t+Math.sin(i*7+j)*.02,y=a[1]+(b[1]-a[1])*t+Math.cos(j*3+i)*.02;s+=`<circle cx="${(x*sc).toFixed(1)}" cy="${(-y*sc).toFixed(1)}" r="${r}" fill="${f}"/>`}});return s}
+$('#m1').innerHTML=dots(R,28,1.5,'#fff')+dots(O,28,1.5,'#fff');$('#m2').innerHTML=dots(R,85,2.4,'#fff')+dots(O,85,2.4,'#F0A93A');
+function ch(id,S,a,b){let g='';for(let i=0;i<=4;i++){const y=14+172*i/4*.93;g+=`<line x1="40" x2="560" y1="${y}" y2="${y}" class="gr"/><text x="0" y="${y+4}" class="tx">${(b-(b-a)*i/4).toFixed(1)}</text>`}S.forEach(s=>{let d='';for(let i=0;i<=120;i++){const v=s.f(i/2),x=40+520*i/120,y=14+160*(b-v)/(b-a);d+=(i?'L':'M')+x.toFixed(1)+' '+y.toFixed(1)}g+=`<path d="${d}" fill="none" stroke="${s.c}" stroke-width="3" stroke-linejoin="round"${s.d?' stroke-dasharray="6 5"':''}/>`});$(id).innerHTML=g+'<text x="40" y="198" class="tx">−60 s</text><text x="560" y="198" class="tx" text-anchor="end">maintenant</text>'}
+ch('#c1',[{c:'#F0A93A',d:1,f:t=>0},{c:'#22C3F0',f:t=>3*Math.sin(t/2.1)*Math.exp(-t/35)+.25*Math.sin(t*2.9)}],-4,4);
+ch('#c2',[{c:'#22C3F0',f:t=>.35+.05*Math.sin(t/3)},{c:'#2FB37A',f:t=>.35+.05*Math.sin(t/3+.6)}],0,.6);
+ch('#c3',[{c:'#22C3F0',f:t=>42+12*Math.sin(t/2.6)*Math.exp(-t/45)},{c:'#2FB37A',f:t=>45+12*Math.sin(t/2.6+.5)*Math.exp(-t/45)}],0,100);
+const L=[['OK','12:41:03','Liaison série ouverte · /dev/ttyUSB0 · 115200'],['INFO','12:41:04','IMU calibrée · biais gyro 0,02 °/s'],['INFO','12:41:05','Lidar : 360 pts/tour à 8 Hz'],['OK','12:41:06','Boucle d\'équilibre démarrée · 200 Hz'],['INFO','12:41:20','Mode : télécommande (RC)'],['WARN','12:43:11','Paquets perdus : 2 sur 640 (0,3 %)'],['INFO','12:44:02','Obstacle à 0,42 m · avant gauche'],['WARN','12:46:37','Batterie 12,1 V · 87 %'],['ERR','12:47:15','Timeout caméra · image ignorée'],['INFO','12:47:16','Caméra reprise · 2 Hz']];
+$('#log').innerHTML=L.map(l=>`<div class="l ${l[0]}"><span>${l[1]}</span><b>${l[0]}</b>${l[2]}</div>`).join('');
+$$('.f').forEach(b=>b.onclick=()=>{$('#log').classList.toggle('h'+b.dataset.f);b.style.opacity=b.style.opacity==='.5'?'':'.5'});
+$$('.hit').forEach(g=>g.onclick=()=>{$$('.wing button,.tab').forEach(x=>x.classList.remove('on'));const b=$(`.wing button[data-t="${g.dataset.t}"]`);if(b){b.classList.add('on');$('#'+g.dataset.t).classList.add('on')}});
+const CG=8,CS=21,CX=606,CY=201,CPAL=['#8DA2C8','#7A90BC','#6F86B4','#A9BAD9','#5B6FA0'];
+let cCells=Array.from({length:CG*CG},(_,i)=>{const r=Math.floor(i/CG);return r<3?0:r<4?1+i%2:r<6?3:4});
+function drawCam(){$('#camPix').innerHTML=cCells.map((p,i)=>`<rect x="${CX+(i%CG)*CS}" y="${CY+Math.floor(i/CG)*CS}" width="${CS}" height="${CS}" fill="${CPAL[p]}"/>`).join('')+`<rect x="${CX+3*CS}" y="${CY+5*CS}" width="30" height="30" fill="#F0A93A"/>`}
+drawCam();setInterval(()=>{cCells[Math.floor(Math.random()*64)]=Math.floor(Math.random()*5);drawCam()},200);
+</script></body></html>
