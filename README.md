@@ -94,8 +94,10 @@ GyroBot/
 │
 ├── Documentation/
 │   ├── Images/
-│   │   
-│   └── Diagrammes.md
+|   |  
+|   ├── Excel/
+|   |   
+│   └── RAPPORT.md
 │
 └── 3D/
     ├── V1_Images/
@@ -106,7 +108,6 @@ GyroBot/
 
 The `Documentation` folder contains the analyses and diagrams produced during the preliminary design phase.
 
-
 The `Gantt.xlsx` file contains the Gantt chart for beginning of the project.
 
-The `3D/V1` folder contains the first conceptual 3D model and pictures of GyroBot.
+The `3D` folder contains the first conceptual 3D model and pictures of GyroBot.
