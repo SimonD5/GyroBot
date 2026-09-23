@@ -96,6 +96,8 @@ GyroBot/
 │   ├── Images/
 |   |  
 |   ├── Excel/
+|   |
+|   ├── HMI/
 |   |   
 │   └── RAPPORT.md
 │
@@ -105,9 +107,8 @@ GyroBot/
     └── V1_stl/
 ```
 
+The `Gantt.xlsx` file contains the Gantt chart for project.
 
-The `Documentation` folder contains the analyses and diagrams produced during the preliminary design phase.
-
-The `Gantt.xlsx` file contains the Gantt chart for beginning of the project.
+The `Documentation` folder contains the analyses and diagrams, Excel files and HMI of the robot produced during the preliminary design phase
 
 The `3D` folder contains the first conceptual 3D model and pictures of GyroBot.
