@@ -91,8 +91,9 @@ GyroBot/
 ├── Gantt.xlsx
 ├── Documentation/
 │   ├── Images/
-|   ├── Excel/
-|   ├── HMI/ 
+│   ├── Excel/
+│   ├── HMI/ 
+│   ├── Rapport cas d usage.docx
 │   └── RAPPORT.md
 ├── Remote/
 │   ├── ComponentChoiceRemote.xlsx
