@@ -87,26 +87,25 @@ The current 3D model is **not a final design**. It is a simple first version int
 
 ```text
 GyroBot/
-│
 ├── README.md
-|
 ├── Gantt.xlsx
-│
 ├── Documentation/
 │   ├── Images/
-│   │   
-│   └── Diagrammes.md
-│
+│   ├── Excel/
+│   ├── HMI/ 
+│   ├── Rapport cas d usage.docx
+│   └── RAPPORT.md
+├── Remote/
+│   ├── ComponentChoiceRemote.xlsx
 └── 3D/
     ├── V1_Images/
-    |
     └── V1_stl/
 ```
 
+The `Gantt.xlsx` file contains the Gantt chart for project.
 
-The `Documentation` folder contains the analyses and diagrams produced during the preliminary design phase.
+The `Documentation` folder contains the analyses and diagrams, Excel files and HMI of the robot produced during the preliminary design phase
 
+The `Remote` folder contains the files about remote controller build for the robot.
 
-The `Gantt.xlsx` file contains the Gantt chart for beginning of the project.
-
-The `3D/V1` folder contains the first conceptual 3D model and pictures of GyroBot.
+The `3D` folder contains the first conceptual 3D model and pictures of GyroBot.
