@@ -6,7 +6,7 @@ height="1.9131944444444444in"}Cas d'usage Gyrobot
 
 Alexandre Vanpeperstraëte\--Bourgueil
 
-Isam Ben-Haddou
+Isam Ben Haddou
 
 Maud Haas Quentin Legros
 
