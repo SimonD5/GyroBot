@@ -1,0 +1,147 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/floors/protos/RectangleArena.proto"
+
+WorldInfo {
+  basicTimeStep 5
+  contactProperties [
+    ContactProperties {
+      material1 "wheel"
+      material2 "default"
+      coulombFriction [ 1.0 ]
+    }
+  ]
+}
+Viewpoint {
+  orientation 0.008321186361914947 -0.030616992782610764 -0.9994965520753336 1.5549947144661143
+  position -0.0454133500357214 1.3330327169264569 0.27528244297788124
+}
+TexturedBackground {
+}
+TexturedBackgroundLight {
+}
+RectangleArena {
+}
+Robot {
+  name "gyrobot"
+  controller "gyrobot_controller"
+  children [
+    DEF Body Pose {
+      translation 0 0 0.2
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.3 0.6 0.9
+            roughness 1
+            metalness 0
+          }
+          geometry Cylinder {
+            height 0.25
+            radius 0.1
+          }
+        }
+      ]
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters {
+        anchor 0.13 0 0.06
+      }
+      device [
+        RotationalMotor {
+          name "MotG"
+          maxVelocity 82.6
+          maxTorque 0.216
+        }
+        PositionSensor {
+          name "CodG"
+        }
+      ]
+      endPoint Solid {
+        translation 0.13 0 0.06
+        rotation 0 1 0 1.57
+        children [
+          DEF WheelG Shape {
+            appearance PBRAppearance {
+              baseColor 0.1 0.1 0.4
+              roughness 1
+              metalness 0
+            }
+            geometry Cylinder {
+              height 0.06
+              radius 0.06
+            }
+          }
+        ]
+        name "roue_G"
+        contactMaterial "wheel"
+        boundingObject USE WheelG
+        physics DEF Wheel_physics Physics {
+          density -1
+          mass 0.1
+        }
+      }
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters {
+        anchor -0.13 0 0.06
+      }
+      device [
+        RotationalMotor {
+          name "MotD"
+          maxVelocity 82.6
+          maxTorque 0.216
+        }
+        PositionSensor {
+          name "CodD"
+        }
+      ]
+      endPoint Solid {
+        translation -0.13 0 0.06
+        rotation 0 1 0 1.57
+        children [
+          USE WheelG
+        ]
+        name "roue_D"
+        contactMaterial "wheel"
+        boundingObject USE WheelG
+        physics USE Wheel_physics
+      }
+    }
+    InertialUnit {
+      translation 0 0 0.2
+      name "imu"
+    }
+    Gyro {
+      translation 0 0 0.2
+      name "gyro"
+    }
+    Accelerometer {
+      translation 0 0 0.2
+      name "accel"
+    }
+    Solid {
+      translation 0.000947344 0.0768052 0.255
+      rotation -0.2810839910810645 0.6785979784677472 0.6785989784677153 1.09606
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 1 0.5 0.3
+            roughness 1
+            metalness 0
+          }
+          geometry Box {
+            size 0.05 0.05 0.05
+          }
+        }
+      ]
+      name "solid(2)"
+    }
+  ]
+  boundingObject USE Body
+  physics Physics {
+    density -1
+    mass 0.8
+  }
+}
