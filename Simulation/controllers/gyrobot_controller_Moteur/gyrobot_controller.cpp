@@ -13,7 +13,7 @@ int main() {
   motG->setPosition(std::numeric_limits<double>::infinity());  // mode vitesse
   motD->setPosition(std::numeric_limits<double>::infinity());
 
-  while (robot->step(dt) != -1) {
+  while (robot->step(dt) != -1) {  //toute les 5ms
     motG->setVelocity(2.0);
     motD->setVelocity(2.0);
   }
