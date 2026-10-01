@@ -34,8 +34,8 @@ int main() {
     const double gx = g[0];       // vitesse angulaire autour de x
 
     if (i % 2 == 0) {            // un affichage toutes les 10 ms pour ne pas trop ralentir
-      printf("roll=%.3f rad | gyro_x=%.3f rad/s | codG=%.2f rad\n",
-             roll, gx, codG->getValue());
+      printf("roll=%.3f rad | gyro_x=%.3f rad/s | codG=%.2f rad | codD=%.2f rad\n",
+             roll, gx, codG->getValue(), codD->getValue());
     }
     i++;
 
