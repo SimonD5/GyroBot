@@ -1,111 +1,66 @@
 # GyroBot
 
 <p align="center">
-  <img src="3D/V1_Images/Global1.png" alt="GyroBot V1 concept" width="500">
+  <img src="3D/V1_Images/Global1.png" alt="GyroBot V1 concept" width="480">
 </p>
 
 ## Overview
 
 **GyroBot** is a compact two-wheeled self-balancing robot designed to operate in environments where mobility, accessibility and autonomous navigation can be challenging.
 
-The project aims to explore the design of a small, lightweight robotic platform capable of maintaining its balance on two wheels, while providing a base for future applications such as mapping, exploration and assistance in difficult environments.
+The project focuses on developing an agile robotic platform combining dynamic balance control with spatial perception (LiDAR and camera), backed by a dedicated remote controller, a wireless repeater node, and a supervisory monitoring station.
 
-At this stage, GyroBot is still in its early conceptual phase. The current work focuses mainly on functional analysis, risk assessment and the definition of the robot's overall architecture and requirements.
+## System Architecture
 
-## Potential Applications
+<p align="center">
+  <img src="Documentation/Images/Interaction.png" alt="GyroBot System Communication Architecture" width="720">
+</p>
 
-Several applications are being considered for GyroBot:
+The overall system is organized around four cooperating elements:
 
-### Mapping and Construction
+* **Robot**: Dual-architecture platform powered by an ESP32 for high-frequency balance and motor control (cascade PID at 200 Hz), coupled with a Raspberry Pi for onboard perception (LiDAR, camera) and telemetry transmission.
+* **Remote Controller**: A custom handheld controller based on an ESP32, featuring dual joysticks, an OLED display, and dedicated controls for responsive manual steering via ESP-NOW / Wi-Fi.
+* **Wi-Fi Repeater**: An autonomous ESP32 wireless relay node deployed to extend transmission range between the robot and the ground station in complex indoor layouts.
+* **HMI / Ground Station**: A laptop dashboard displaying real-time environmental maps, sensor telemetry, battery status, and operating metrics.
 
-GyroBot could be used to create maps or collect spatial information in buildings and other environments.
+## Key Targets & Specifications
 
-Potential applications include:
-
-* Supporting architects and construction companies
-* Surveying buildings and construction sites
-* Collecting environmental or spatial data
-* Inspecting areas that are difficult to access
-
-###  Search and Rescue
-
-Its compact size and two-wheeled configuration could allow GyroBot to access areas that are difficult or unsafe for humans.
-
-Possible applications include:
-
-* Search and rescue operations
-* Exploration after disasters
-* Inspection of unstable structures
-* Assistance in hazardous or inaccessible environments
-
-###  Hostile and Hazardous Environments
-
-A future version of GyroBot could potentially be equipped with sensors adapted to environments that are dangerous for humans.
-
-Examples include:
-
-* Military or conflict environments
-* Radioactive areas
-* Industrial hazardous zones
-* Contaminated environments
-* Other areas where remote exploration is preferable
-
-> These applications are currently **conceptual goals** and do not represent the capabilities of the current prototype.
-
-## Main Objectives
-
-The current objective is to develop a small and lightweight self-balancing robotic platform.
-
-| Requirement      | Current Target               |
-| ---------------- | ---------------------------- |
-| Number of wheels | 2                            |
-| Height           | ~30 cm                       |
-| Weight           | < 1,5 kg                       |
-
-
-The dimensions and weight targets are preliminary and may evolve as the project progresses.
+| Requirement | Current Target | Description / Constraints |
+| --- | --- | --- |
+| Architecture | 2 coaxial wheels | Inverted pendulum dynamic balance |
+| Dimensions & Weight | ~30 cm height, < 1.5 kg | Compact, lightweight chassis |
+| Control Loop | 200 Hz (5 ms) | Dual-loop cascade PID (angle stability + velocity drift) |
+| Perception | LiDAR + Camera | Environmental mapping (target accuracy ~5 cm) |
+| Communication | 2.4 GHz (ESP-NOW / Wi-Fi) | Low-latency steering (< 50 ms) & telemetry |
 
 ## Current Progress
 
-The project is currently at the **preliminary design stage**.
-
-So far, we have worked on:
-
-* Functional analysis
-* Identification of the main functions of the robot
-* FAST diagram
-* "Horned Beast" functional analysis
-* Pieuvre diagram
-* Risk analysis
-* Initial definition of project requirements
-* Preliminary 3D modelling
-
-The current 3D model is **not a final design**. It is a simple first version intended to estimate the overall size, proportions and general appearance of the robot.
+* **Functional & Risk Analysis**: Requirements definition, functional breakdown (FAST, Horned Beast, Octopus diagrams), and failure mode analysis (FMEA).
+* **Dynamic Simulation**: Webots physics simulation with sensor and motor controllers (`Simulation/`).
+* **Hardware Prototyping & Balance Bench**: Physical prototype with ESP32-C6, MPU6050 IMU, motor drivers, and a real-time Wi-Fi cascade PID tuning tool (`Repeteur/Code/`).
+* **Remote Controller Design**: Circuit schematic, component selection, and 3D enclosure modeling (`Remote/`).
+* **Validation & Test Protocols**: Comprehensive test plan (`TestRobot.md`) covering wireless range, response latency, mapping precision, and balance robustness.
 
 ## Project Structure
 
-
 ```text
 GyroBot/
-├── README.md
-├── Gantt.xlsx
-├── Documentation/
-│   ├── Images/
-│   ├── Excel/
-│   ├── HMI/ 
-│   ├── Rapport cas d usage.docx
-│   └── RAPPORT.md
-├── Remote/
-│   ├── ComponentChoiceRemote.xlsx
-└── 3D/
-    ├── V1_Images/
-    └── V1_stl/
+├── README.md                          # Project overview and architecture
+├── Gantt.xlsx                         # Project planning and milestones
+├── 3D/                                # Robot CAD models (STL) and concept renders
+├── Documentation/                     # Functional analysis, specifications, and test plans
+│   ├── Images/                        # Architecture and functional diagrams
+│   ├── HMI/                           # Web interface prototype and mockups
+│   └── TestRobot.md                   # System test and validation protocol
+├── Remote/                            # Dedicated remote controller
+│   ├── 3D/                            # Remote casing designs (V1, V2)
+│   ├── ComponentChoiceRemote.xlsx     # Bill of materials and hardware selection
+│   └── telecommandeSchematic.png      # Controller wiring schematic
+├── Repeteur/                          # Prototype chassis and firmware
+│   ├── 3D/                            # Prototype mechanical parts
+│   └── Code/                          # Motor/IMU tests & Wi-Fi PID cascade tuning suite
+└── Simulation/                        # Webots simulation environment
+    ├── controllers/                   # Simulation control code (C++)
+    ├── worlds/                        # Webots simulation world
+    └── VideoSimulation.mp4            # Demonstration video
 ```
-
-The `Gantt.xlsx` file contains the Gantt chart for project.
-
-The `Documentation` folder contains the analyses and diagrams, Excel files and HMI of the robot produced during the preliminary design phase
-
-The `Remote` folder contains the files about remote controller build for the robot.
-
-The `3D` folder contains the first conceptual 3D model and pictures of GyroBot.
