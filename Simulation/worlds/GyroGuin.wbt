@@ -9,14 +9,12 @@ WorldInfo {
   contactProperties [
     ContactProperties {
       material1 "wheel"
-      material2 "default"
-      coulombFriction [ 1.0 ]
     }
   ]
 }
 Viewpoint {
-  orientation 0.008321186361914947 -0.030616992782610764 -0.9994965520753336 1.5549947144661143
-  position -0.0454133500357214 1.3330327169264569 0.27528244297788124
+  orientation 0.006524026816138938 -0.027466629760841802 -0.9996014312333107 4.079362245986814
+  position 0.8949440169350468 -1.3913065717571447 0.3608783598336355
 }
 TexturedBackground {
 }
@@ -25,8 +23,8 @@ TexturedBackgroundLight {
 RectangleArena {
 }
 Robot {
-  name "gyrobot"
-  controller "gyrobot_controller"
+  translation 3.374280297923509e-07 -0.0073305672022983825 0.0998333892637341
+  rotation -0.999999999942161 -2.6017782268525207e-06 1.0435913127748355e-05 1.5705764103115054
   children [
     DEF Body Pose {
       translation 0 0 0.2
@@ -46,6 +44,7 @@ Robot {
     }
     HingeJoint {
       jointParameters HingeJointParameters {
+        position 8.251393724178614
         anchor 0.13 0 0.06
       }
       device [
@@ -60,7 +59,7 @@ Robot {
       ]
       endPoint Solid {
         translation 0.13 0 0.06
-        rotation 0 1 0 1.57
+        rotation -0.6402327254293697 -0.42527217225072605 -0.6397230938448524 3.946368702761469
         children [
           DEF WheelG Shape {
             appearance PBRAppearance {
@@ -81,10 +80,13 @@ Robot {
           density -1
           mass 0.1
         }
+        linearVelocity 1.4776041725952111e-08 1.0444204362387957e-11 -1.9215960696753284e-08
+        angularVelocity 1.999999999766762 2.6222090517455182e-05 -1.566287320070342e-05
       }
     }
     HingeJoint {
       jointParameters HingeJointParameters {
+        position 8.251419486683407
         anchor -0.13 0 0.06
       }
       device [
@@ -99,7 +101,7 @@ Robot {
       ]
       endPoint Solid {
         translation -0.13 0 0.06
-        rotation 0 1 0 1.57
+        rotation -0.6402359605578304 -0.4252624391146715 -0.6397263263981188 3.946352208721139
         children [
           USE WheelG
         ]
@@ -107,6 +109,8 @@ Robot {
         contactMaterial "wheel"
         boundingObject USE WheelG
         physics USE Wheel_physics
+        linearVelocity 1.4776341847422581e-08 -1.005473525022167e-11 1.921596087283196e-08
+        angularVelocity 1.9999999997667623 2.6222090536977367e-05 -1.5662873199699403e-05
       }
     }
     InertialUnit {
@@ -115,7 +119,6 @@ Robot {
     }
     Gyro {
       translation 0 0 0.2
-      name "gyro"
     }
     Accelerometer {
       translation 0 0 0.2
@@ -139,9 +142,13 @@ Robot {
       name "solid(2)"
     }
   ]
+  name "gyrobot"
   boundingObject USE Body
   physics Physics {
     density -1
     mass 0.8
   }
+  controller "gyrobot_controller"
+  linearVelocity 1.4769704126764674e-08 1.9366619286469084e-13 3.33066907387547e-17
+  angularVelocity -1.9382370294796406e-12 1.4781506802563478e-07 7.883909035300466e-11
 }
