@@ -23,20 +23,45 @@ Avec les moteurs 500 RPM :
 - **`Firmwares_Autonomes/robot_v7_standalone_500rpm/`** :
   - Firmware final autonome intégrant le redressement automatique au sol (boutons arrière) et la conduite joystick ESP-NOW.
   - Pré-configuré avec une inclinaison initiale à **1.20°** (plage dynamique 0.30° à 2.50° via `BtnAvH` / `BtnAvG`).
+- **`Bancs_Essai_Tuning/robot_v4_antiderive_500rpm/`** :
+  - **Banc Wi-Fi V4 (NOUVEAU)** : intègre l'odométrie virtuelle de position (`Ki2`) pour bloquer la dérive de 3-4 m, l'adoucissement de rampe (`ZONE_RAMPE = 45`) et les gains pré-ajustés anti-tremblement 10 Hz (`Kp=12.5`, `Kd=0.08`, `consigne=1.35°`, `pwmMin=28`).
 - **`Bancs_Essai_Tuning/robot_v3_deadband_500rpm/`** :
-  - Banc Wi-Fi pour ajuster `Kp`, `Ki`, `Kd`, `pwmMin`, `Kp2`, `Deadband` en direct depuis le PC (`lancer_pid_tuner_v3.bat`).
+  - Banc Wi-Fi V3 historique pour moteurs 500 RPM.
 - **`Sessions_Tests_500RPM/`** :
-  - Dossier destiné à recevoir les enregistrements télémétriques JSON et résumés CSV issus des essais avec les 500 RPM.
+  - Contient la session `184348` (première tenue réussie de 45s sur les essais 15 à 18).
 
 ---
 
-## 3. Guide de réglage PID pour les 500 RPM
+## 3. Sens de Rotation des Moteurs 500 RPM
 
-1. **Point de départ** :
-   - `Kp = 16.0`, `Ki = 1.0`, `Kd = 0.30`, `Consigne = +0.5°`
-   - `pwmMin = 18` (à vérifier au décollage des roues)
-   - `Kp2 = 0.25`, `Deadband = 2.0`
-2. **Points d'attention** :
-   - Le rapport d'engrenage étant plus faible sur les 500 RPM (ex: 1:50 au lieu de 1:100), le couple moteur par unité de PWM est légèrement inférieur.
-   - Si le robot manque de réactivité pour tenir l'équilibre, augmenter légèrement `Kp` (ex: 17.0 à 19.0).
-   - Si des micro-vibrations apparaissent dues à la vitesse de réponse plus rapide, réduire légèrement `Kd` (ex: 0.25 au lieu de 0.30).
+Contrairement aux moteurs 300 RPM, les moteurs 500 RPM ont une polarité interne inversée.  
+Le logiciel applique donc les signes suivants :
+- **Moteur A (Gauche)** : `SIGN_MOTEUR_A = -1`
+- **Moteur B (Droit)** : `SIGN_MOTEUR_B = +1`
+
+---
+
+## 4. Affichage de l'Angle en Direct (PID Tuner V3)
+
+Lorsque le robot est **désarmé** (au repos) :
+- L'angle d'inclinaison réel est diffusé en continu (10 Hz) et s'affiche dans l'interface PC :  
+  `📐 Angle actuel : +0.72°`
+- **Utilisation** : Maintenez le robot à la main à son point d'équilibre naturel. L'angle affiché vous donne la valeur exacte de consigne à renseigner dans **`Consigne °`**.
+- Un bouton rapide **`[ 📐 Consigne = Angle ]`** permet de recopier directement l'angle mesuré comme nouvelle consigne d'équilibre en un seul clic !
+
+---
+
+## 5. Analyse de la Session 184348 & Réglages V4
+
+La session `PID_session_v3_wifi_20261018_184348.json` a permis d'obtenir les 4 premiers essais complets de 45 secondes (`TRES BON`, essais 15 à 18).
+
+### Diagnostic des 2 problèmes observés :
+1. **Tremblement résiduel (vibration à ~10 Hz)** :
+   - Sur les essais 3-5 avec $K_d = 0.30$, le robot chutait en 2s (sursaturations dérivées).
+   - En réduisant $K_d$ à $0.10$ puis $0.05$ (essai 16), la puissance des tremblements a chuté de moitié.
+   - **Piste prioritaire** : Les moteurs 500 RPM réagissent plus vivement avec un couple immédiat. Le terme $K_p = 15.0$ est encore légèrement trop rigide et entretient le cycle à 10 Hz.
+   - **Solution V4** : Régler $K_p$ entre **11.5 et 13.0** avec $K_d$ entre **0.06 et 0.08**, et adoucir la rampe de friction (`ZONE_RAMPE = 45.0` pour `pwmMin = 28`).
+2. **Dérive permanente en arrière (3 à 4 mètres en 45s)** :
+   - **Cause 1 (Consigne désaxée)** : La consigne était à `0.30°`, or l'analyse télémétrique montre que le centre de masse réel du robot avec les 500 RPM est à **`+1.35°` en moyenne**. Le robot était forcé de rouler en arrière en permanence pour ne pas basculer sur le dos.
+   - **Cause 2 (Absence de rappel de position dans la boucle 2)** : En V3, $K_{i2}$ n'était pas actif, la boucle 2 ne compensait que la vitesse instantanée ($K_{p2} \cdot v$). Un correcteur P pur a toujours une erreur statique permanente (qui se traduit ici par une vitesse constante en arrière).
+   - **Solution V4** : Activer l'odométrie virtuelle de position via $K_{i2}$ (valeur typique : **`0.008` à `0.015`**). Dès que le robot recule, l'intégrateur de position virtuelle s'incrémente négativement et pousse la consigne d'angle vers l'avant pour ramener le robot à sa position initiale.

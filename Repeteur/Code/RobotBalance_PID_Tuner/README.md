@@ -121,8 +121,13 @@ void commandeMoteurs(int cmd, int turn = 0) {
 
 > [!TIP]
 > **Si vous branchez de nouveaux moteurs ou changez le câblage :**
-> - Si le moteur gauche tourne à l'envers : inverser les fils branchés sur `A01`/`A02`, ou changer `SIGN_MOTEUR_A` en `-1` dans le firmware.
-> - Si le moteur droit tourne à l'envers : inverser les fils branchés sur `B01`/`B02`, ou changer `SIGN_MOTEUR_B` en `+1` dans le firmware.
+> - Si le moteur gauche tourne à l'envers : inverser les fils branchés sur `A01`/`A02`, ou changer `SIGN_MOTEUR_A` dans le firmware.
+> - Si le moteur droit tourne à l'envers : inverser les fils branchés sur `B01`/`B02`, ou changer `SIGN_MOTEUR_B` dans le firmware.
+> - **Pour les moteurs 500 RPM** : Le firmware applique `SIGN_MOTEUR_A = -1` et `SIGN_MOTEUR_B = +1` (polarité inversée).
+
+> [!NOTE]
+> **Affichage de l'Angle en Direct (PID Tuner V3) :**
+> Lorsque le robot est désarmé au repos, son inclinaison actuelle s'affiche en temps réel sur l'interface PC (`📐 Angle actuel : +0.72°`). Cela permet de tenir le robot à la main à sa position d'équilibre mécanique pour identifier immédiatement l'angle cible, puis de cliquer sur `[ 📐 Consigne = Angle ]` pour caler la consigne sans tâtonner !
 
 ---
 

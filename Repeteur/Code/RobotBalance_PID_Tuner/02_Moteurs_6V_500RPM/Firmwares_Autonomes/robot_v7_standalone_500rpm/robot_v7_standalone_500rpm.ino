@@ -78,8 +78,8 @@
 const int PWM_FREQ      = 20000;
 const int PWM_RES       = 8;
 const int PWM_MAX       = 200; // Max absolue moteurs N20 6v
-const int SIGN_MOTEUR_A =  1;
-const int SIGN_MOTEUR_B = -1;
+const int SIGN_MOTEUR_A = -1; // Inversé pour moteurs 500 RPM
+const int SIGN_MOTEUR_B =  1; // Inversé pour moteurs 500 RPM
 
 // ---------------- Constantes algorithme ----------------
 const float ALPHA_V        = 0.03f;

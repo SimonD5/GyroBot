@@ -655,6 +655,15 @@ void loop() {
   rateF += ALPHA_D * (rate - rateF);
   angle = ALPHA * (angle + rate * dt) + (1.0 - ALPHA) * accAngle;
 
+  // Diffusion de l'angle en direct quand le robot n'est pas en essai (10 Hz = 100 ms)
+  static uint32_t tDernierAngleLive = 0;
+  if (etat != ETAT_ACTIF && !trialPret && (millis() - tDernierAngleLive >= 100)) {
+    tDernierAngleLive = millis();
+    if (client && client.connected()) {
+      client.printf("ANGLE,%.2f\n", angle);
+    }
+  }
+
   float erreur = angle - consigneActive;
 
   switch (etat) {

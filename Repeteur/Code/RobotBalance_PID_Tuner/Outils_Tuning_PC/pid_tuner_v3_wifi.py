@@ -249,6 +249,7 @@ class PIDTunerWifi:
 
         # Indicateur "essai en attente" reçu dans PARAM
         self._pending_trial = False
+        self._current_live_angle = None
 
         self.session_started = datetime.now().isoformat(timespec="seconds")
 
@@ -279,6 +280,14 @@ class PIDTunerWifi:
 
         self._status_label = ttk.Label(top, text="État robot : —")
         self._status_label.pack(side="left", padx=10)
+
+        self._live_angle_label = ttk.Label(
+            top,
+            text="📐 Angle actuel : —",
+            font=("Segoe UI", 11, "bold"),
+            foreground="#0055aa",
+        )
+        self._live_angle_label.pack(side="left", padx=15)
 
         ttk.Button(top, text="Importer session", command=self._import_session).pack(side="right")
         ttk.Button(top, text="Exporter session", command=self._export_session).pack(side="right", padx=5)
@@ -337,6 +346,7 @@ class PIDTunerWifi:
         ttk.Button(controls, text="Réglage départ",  command=self._reset_params).pack(side="left")
         ttk.Button(controls, text="Gyro ZÉRO",       command=lambda: self._send("z")).pack(side="left", padx=5)
         ttk.Button(controls, text="Inverser gyro",   command=lambda: self._send("g")).pack(side="left")
+        ttk.Button(controls, text="📐 Consigne = Angle", command=self._setpoint_from_live_angle).pack(side="left", padx=5)
 
         self._arm_button = ttk.Button(controls, text="ARMER", command=self._toggle_arm)
         self._arm_button.pack(side="right", padx=5)
@@ -539,6 +549,8 @@ class PIDTunerWifi:
         self._sock = None
         self._conn_label.config(text="● Déconnecté", foreground="red")
         self._status_label.config(text="État robot : —")
+        self._live_angle_label.config(text="📐 Angle actuel : —", foreground="#0055aa")
+        self._current_live_angle = None
 
     def _tcp_reader(self):
         """Lit les lignes TCP en arrière-plan et les pousse dans rx_queue."""
@@ -697,6 +709,14 @@ class PIDTunerWifi:
     # ── Parsing du protocole WiFi ─────────────────────────────────────────────
     def _parse_line(self, line):
         """Traite une ligne reçue du robot."""
+        if line.startswith("ANGLE,"):
+            try:
+                val = float(line.split(",")[1])
+                self._update_live_angle(val)
+            except (ValueError, IndexError):
+                pass
+            return
+
         self._log(line)
 
         if line.startswith("INFO,"):
@@ -729,6 +749,35 @@ class PIDTunerWifi:
             self._conn_label.config(text="● Erreur TCP", foreground="red")
             self.connected = False
             return
+
+    def _update_live_angle(self, val):
+        self._current_live_angle = val
+        if self._arm_button["text"] == "ARMER":
+            # Robot non armé / au repos
+            color = "#008800" if abs(val) < 1.5 else "#0055aa"
+            self._live_angle_label.config(
+                text=f"📐 Angle actuel : {val:+.2f}°",
+                foreground=color,
+            )
+        else:
+            self._live_angle_label.config(
+                text=f"📐 Angle actuel : {val:+.2f}° (en attente verticale)",
+                foreground="#e67e00",
+            )
+
+    def _setpoint_from_live_angle(self):
+        if self._current_live_angle is not None:
+            val = round(self._current_live_angle, 2)
+            self._vars["setpoint"].set(str(val))
+            self._send(f"s{val}")
+            self._recommendation_label.config(
+                text=f"Consigne d'équilibre mise à jour avec l'angle actuel ({val:+.2f}°). N'oublie pas de cliquer sur 'Appliquer PID'."
+            )
+        else:
+            messagebox.showinfo(
+                "Angle actuel",
+                "Aucune mesure d'angle reçue pour l'instant.\nAssure-toi que le robot est connecté en Wi-Fi."
+            )
 
     def _parse_param(self, line):
         """PARAM,Kp=..,Ki=..,Kd=..,consigne=..,pwmMin=..,gyroSign=..,armed=..,pending=..,cap=.."""
