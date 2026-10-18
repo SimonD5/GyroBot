@@ -1,0 +1,9 @@
+trial;Kp;Ki;Kd;setpoint;pwmMin;duration_s;rms_error_deg;max_error_deg;max_rate_deg_s;max_pwm;mean_pwm;mean_dt_ms;max_dt_ms;oscillations;outcome;recommendation
+1;15.0;1.0;0.3;2.5;11;29.995;0.5287845181798222;1.9100000000000001;49.3;34;9.138833333333332;5.0;8.748;35;TRES BON;Réglage prometteur. Fais 3 essais identiques pour vérifier la répétabilité avant de modifier les gains.
+2;15.0;1.0;0.3;2.5;11;11.304;2.555625095480011;18.5;153.6;200;27.45844385499558;4.999999557913351;8.741;58;CHUTE;Bonne tenue mais erreur encore importante. Teste une petite hausse de Kd puis vérifie l'angle moyen.
+3;15.0;1.0;0.3;2.5;11;18.319;1.7576224561888476;18.74;156.5;200;18.22155525238745;5.000000272851296;8.754;60;CHUTE;Bonne tenue mais erreur encore importante. Teste une petite hausse de Kd puis vérifie l'angle moyen.
+4;15.0;1.0;0.3;2.5;11;12.574;2.3839068613703;19.23;162.1;200;22.89864864864865;4.999998807631161;8.744;50;CHUTE;Bonne tenue mais erreur encore importante. Teste une petite hausse de Kd puis vérifie l'angle moyen.
+5;15.0;1.0;0.3;2.5;11;21.609;1.8501099491556818;18.55;146.0;200;18.049965301873698;4.999999537358316;8.747;55;CHUTE;Bonne tenue mais erreur encore importante. Teste une petite hausse de Kd puis vérifie l'angle moyen.
+6;15.0;1.0;0.3;2.5;11;26.679;1.6871650744319557;18.92;143.1;200;15.965523702454563;5.000000187371183;8.744;53;CHUTE;Bonne tenue mais erreur encore importante. Teste une petite hausse de Kd puis vérifie l'angle moyen.
+7;15.0;1.0;0.3;2.5;11;3.574;4.237406201067955;18.59;105.6;200;52.650837988826815;4.9999972067039105;6.745;4;CHUTE;Oscillations nombreuses/instables. Kp semble trop haut ou le D insuffisant. Premier essai conseillé : Kp -10 %, Kd inchangé.
+8;15.0;1.0;0.3;2.5;11;2.964;4.641698193679995;19.12;100.7;200;56.95454545454545;4.999998316498317;6.747;2;CHUTE;Le robot corrige mais oscille encore fortement. Augmente Kd de 10 à 20 % avant de toucher à Ki.

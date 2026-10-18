@@ -89,6 +89,7 @@ class Trial:
     data: list
     kp2: float = 0.0
     ki2: float = 0.0
+    deadband: float = 2.0
 
 
 # ── Analyseur PID ─────────────────────────────────────────────────────────────
@@ -431,15 +432,15 @@ class PIDTunerWifi:
 
     def _build_history(self, parent):
         columns = (
-            "N", "Kp", "Ki", "Kd", "Kp2", "Ki2", "durée", "RMS err",
+            "N", "Kp", "Ki", "Kd", "Pmin", "Kp2", "Ki2", "Dead", "durée", "RMS err",
             "err max", "gyro max", "PWM max", "dt moy", "dt max", "résultat",
         )
         self._tree = ttk.Treeview(parent, columns=columns, show="headings", height=15)
 
         widths = {
-            "N": 35, "Kp": 55, "Ki": 55, "Kd": 55, "Kp2": 55, "Ki2": 55, "durée": 65,
-            "RMS err": 70, "err max": 70, "gyro max": 75,
-            "PWM max": 70, "dt moy": 65, "dt max": 65, "résultat": 100,
+            "N": 35, "Kp": 50, "Ki": 50, "Kd": 50, "Pmin": 50, "Kp2": 55, "Ki2": 55, "Dead": 50,
+            "durée": 65, "RMS err": 65, "err max": 65, "gyro max": 70,
+            "PWM max": 65, "dt moy": 60, "dt max": 60, "résultat": 95,
         }
 
         for c in columns:
@@ -880,6 +881,7 @@ class PIDTunerWifi:
             pwm_min           = it["pwm_min"],
             kp2               = it.get("kp2", 0.0),
             ki2               = it.get("ki2", 0.0),
+            deadband          = it.get("deadband", 2.0),
             duration          = analysis["duration"],
             max_angle_error   = analysis["max_error"],
             rms_error         = analysis["rms_error"],
@@ -939,7 +941,10 @@ class PIDTunerWifi:
     def _add_history_row(self, t):
         vals = (
             t.number,
-            f"{t.kp:.2f}", f"{t.ki:.3f}", f"{t.kd:.2f}", f"{getattr(t, 'kp2', 0.0):.3f}", f"{getattr(t, 'ki2', 0.0):.4f}",
+            f"{t.kp:.2f}", f"{t.ki:.3f}", f"{t.kd:.2f}",
+            f"{getattr(t, 'pwm_min', 0)}",
+            f"{getattr(t, 'kp2', 0.0):.3f}", f"{getattr(t, 'ki2', 0.0):.4f}",
+            f"{getattr(t, 'deadband', 2.0):.1f}",
             f"{t.duration:.2f}", f"{t.rms_error:.2f}",
             f"{t.max_angle_error:.2f}", f"{t.max_rate:.1f}",
             f"{t.max_pwm:.0f}", f"{t.mean_dt:.2f}", f"{t.max_dt:.2f}",
