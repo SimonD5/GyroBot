@@ -132,20 +132,20 @@ Ce jeu de coefficients a été validé au banc d'essai sur plus de 17 sessions d
 
 | Paramètre | Macro dans le code | Valeur Validée (300 RPM) | Explication & Rôle Dynamique |
 |---|---|---|---|
-| **Gain Proportionnel (Angle)** | `CONF_Kp` | **16.0** | Raideur d'équilibre. Couple proportionnel à l'écart d'inclinaison. |
-| **Gain Intégral (Angle)** | `CONF_Ki` | **1.0** | Annule l'erreur statique résiduelle. Anti-windup borné à $I_{max} = 80$. |
-| **Gain Dérivé (Angle)** | `CONF_Kd` | **0.30** | Amortisseur angulaire appliqué sur la vitesse du gyroscope (`rateF`). |
-| **Angle d'Équilibre Naturel** | `CONF_CONSIGNE` | **+0.50°** | Centre de masse mécanique réel du robot avec sa batterie. |
-| **Friction / Seuil de Décollage** | `CONF_PWM_MIN` | **18** | PWM minimal pour vaincre le frottement statique des réducteurs N20 300 RPM. |
-| **Plafond PWM Sécurité** | `PWM_MAX` | **200 / 255** | Bride de tension pour protéger les bobinages 6V sous LiPo 2S (7.4V - 8.4V). |
-| **Gain Anti-Dérive (Vitesse)** | `CONF_Kp2` | **0.25** | Boucle 2 : ramène le robot vers sa position en inclinant légèrement la consigne selon la vitesse estimée. |
-| **Intégrale Anti-Dérive** | `CONF_Ki2` | **0.00** | Laissée à 0 pour éliminer tout effet de pompage ou oscillation lente. |
-| **Zone Morte Vitesse (Deadband)** | `CONF_DEADBAND` | **2.0 PWM** | Supprime le tremblement à 10-15s en ignorant le bruit de micro-correction. |
-| **Filtre Vitesse Estimée** | `ALPHA_V` | **0.03** | Filtre passe-bas (~200 ms) dérivant la vitesse du robot à partir du PWM. |
-| **Filtre Gyroscope** | `ALPHA_D` | **0.40** | Lissage de la vitesse angulaire pour un terme dérivé propre sans à-coups. |
-| **Fréquence de Boucle** | `PERIODE_US` | **5000 µs (200 Hz)** | Période d'échantillonnage déterministe stricte. |
-| **Angle de Chute (Coupure)** | `CONF_ANGLE_CHUTE` | **18.0°** | Coupe instantanément les moteurs en cas de perte d'équilibre. |
-| **Armement Vertical Auto** | `CONF_ANGLE_REPRISE` | **2.0°** | S'arme automatiquement dès que le robot est maintenu vertical ~300 ms. |
+| **Gain Proportionnel (Angle)** | `CONF_Kp` | **16.0** |
+| **Gain Intégral (Angle)** | `CONF_Ki` | **1.0** | 
+| **Gain Dérivé (Angle)** | `CONF_Kd` | **0.30** | 
+| **Angle d'Équilibre Naturel** | `CONF_CONSIGNE` | **+0.50°** | 
+| **Friction / Seuil de Décollage** | `CONF_PWM_MIN` | **18** | 
+| **Plafond PWM Sécurité** | `PWM_MAX` | **200 / 255** | 
+| **Gain Anti-Dérive (Vitesse)** | `CONF_Kp2` | **0.25** | 
+| **Intégrale Anti-Dérive** | `CONF_Ki2` | **0.00** | 
+| **Zone Morte Vitesse (Deadband)** | `CONF_DEADBAND` | **2.0 PWM** | 
+| **Filtre Vitesse Estimée** | `ALPHA_V` | **0.03** | 
+| **Filtre Gyroscope** | `ALPHA_D` | **0.40** | 
+| **Fréquence de Boucle** | `PERIODE_US` | **5000 µs (200 Hz)** | 
+| **Angle de Chute (Coupure)** | `CONF_ANGLE_CHUTE` | **18.0°** | 
+| **Armement Vertical Auto** | `CONF_ANGLE_REPRISE` | **2.0°** | 
 
 ### Paramètres du Relevage Automatique au sol (Self-Recovery 300 RPM)
 - **Couché en avant ($> 14°$)** :
@@ -164,26 +164,9 @@ Ce jeu de coefficients a été validé au banc d'essai sur plus de 17 sessions d
 - `CONF_TURN_GAIN = 1.2f`.
 
 ---
-
-## 5. Guide des Essais avec les Nouveaux Moteurs 6V 500 RPM
-
-Les fichiers dédiés se trouvent dans [`02_Moteurs_6V_500RPM/`](02_Moteurs_6V_500RPM/) :
-
-### Étape 1 : Vérification au Banc Wi-Fi (`robot_v3_deadband_500rpm`)
-1. Ouvrir [`02_Moteurs_6V_500RPM/Bancs_Essai_Tuning/robot_v3_deadband_500rpm/robot_v3_deadband_500rpm.ino`](02_Moteurs_6V_500RPM/Bancs_Essai_Tuning/robot_v3_deadband_500rpm/robot_v3_deadband_500rpm.ino) et le téléverser sur l'ESP32-C6.
-2. Allumer le robot et connecter le PC au réseau Wi-Fi `RobotPID` (mot de passe : `robot1234`).
-3. Lancer l'interface : double-cliquer sur `lancer_pid_tuner_v3.bat`.
-4. Tester le frottement statique (`pwmMin`) :
-   - Les moteurs 500 RPM ayant un réducteur différent, le frottement de décollage peut être légèrement différent (typiquement entre 18 et 24).
-5. Ajuster `Kp` et `Kd` si nécessaire :
-   - Si le robot semble trop "mou" pour contrer une pichenette : augmenter `Kp` vers 17 ou 18.
-   - Si le robot présente des tremblements à haute fréquence : diminuer `Kd` vers 0.25.
-6. Cliquer sur **« Exporter la session »** à la fin des tests pour enregistrer les courbes dans `02_Moteurs_6V_500RPM/Sessions_Tests_500RPM/`.
-
-### Étape 2 : Utilisation Autonome Finale (`robot_v7_standalone_500rpm`)
 ---
 
-## 6. Utilisation de la Télécommande ESP-NOW (`telecommandev7`)
+## 5. Utilisation de la Télécommande ESP-NOW (`telecommandev7`)
 ### Commandes disponibles :
 - **Joystick Droit** :
   - **Axe Y (Avancer / Reculer)** : modifie l'angle de consigne d'équilibre.
