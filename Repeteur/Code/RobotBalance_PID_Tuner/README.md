@@ -15,12 +15,8 @@ Développé sur **ESP32-C6**, centrale inertielle **MPU6050 (GY-521)**, pont en 
 - **Limitation des 300 RPM** :  
   Sous 6V, un moteur 300 RPM tourne au maximum à ~5 tr/s, ce qui correspond à une vitesse d'avance linéaire d'environ 10 à 12 cm/s.  
   En équilibre statique ou à très basse vitesse, ce couple est excellent. Mais dès qu'on commande au joystick une inclinaison supérieure à **0.8° à 1.0°**, le robot commence à chuter en avant : le PID demande alors aux roues d'accélérer pour replacer la base sous le centre de gravité. Les moteurs 300 RPM atteignent immédiatement leur vitesse maximale de rotation (saturation PWM 200) et ne parviennent plus à rattraper la chute. Le robot décroche alors ou compense violemment en sens inverse.  
-  Pour cette raison, sur les 300 RPM, l'inclinaison maximale tolérée a dû être bridée à **0.50°**.
 - **Avantages des moteurs 500 RPM** :  
-  Avec ~8.3 tr/s (+67% de vitesse de rotation maximale), les moteurs 500 RPM fournissent la réserve cinétique nécessaire pour :
-  1. Atteindre des vitesses de translation franches et dynamiques.
-  2. Tolérer des inclinaisons de consigne nettement plus importantes (**1.20° à 2.50°**) sans saturation en vitesse.
-  3. Réagir plus vivement aux perturbations et accélérations brusques.
+  +67% de vitesse de rotation maximale
 
 ---
 
@@ -117,7 +113,6 @@ void commandeMoteurs(int cmd, int turn = 0) {
   - **Marche Arrière** (`v < 0`) : `AIN1 = LOW`, `AIN2 = HIGH`. La roue gauche tourne en arrière.
 - **Moteur B = Moteur Droit** :
   - Facteur logiciel : `SIGN_MOTEUR_B = -1`
-  - **Particularité physique** : Les motoréducteurs N20 étant montés face à face en opposition (axe orienté vers l'extérieur opposé) et compte tenu du câblage des fils, le moteur B doit tourner en sens électrique inversé pour propulser le robot vers l'avant.
   - **Marche Avant** (`v > 0`) : Avec `SIGN_MOTEUR_B = -1`, la commande réelle envoyée au pont est négative, soit `BIN1 = LOW`, `BIN2 = HIGH`. La roue droite tourne donc géométriquement vers l'AVANT (sens concordant avec la roue gauche).
   - **Marche Arrière** (`v < 0`) : `BIN1 = HIGH`, `BIN2 = LOW`. La roue droite tourne en arrière.
 - **Virages (Différentiel)** :
@@ -186,18 +181,9 @@ Les fichiers dédiés se trouvent dans [`02_Moteurs_6V_500RPM/`](02_Moteurs_6V_5
 6. Cliquer sur **« Exporter la session »** à la fin des tests pour enregistrer les courbes dans `02_Moteurs_6V_500RPM/Sessions_Tests_500RPM/`.
 
 ### Étape 2 : Utilisation Autonome Finale (`robot_v7_standalone_500rpm`)
-1. Téléverser [`02_Moteurs_6V_500RPM/Firmwares_Autonomes/robot_v7_standalone_500rpm/robot_v7_standalone_500rpm.ino`](02_Moteurs_6V_500RPM/Firmwares_Autonomes/robot_v7_standalone_500rpm/robot_v7_standalone_500rpm.ino).
-2. Ce firmware est configuré avec une consigne initiale d'inclinaison de **1.20°** (au lieu de 0.50°), permettant des accélérations franches et une vitesse de translation plus élevée.
-3. Pendant le pilotage, ajuster la vitesse maximale au vol à l'aide des boutons avant de la télécommande :
-   - **Bouton Avant Haut (BtnAvH)** : augmente l'inclinaison max (+0.05° par appui, jusqu'à 2.50°).
-   - **Bouton Avant Gauche (BtnAvG)** : diminue l'inclinaison max (-0.05° par appui, jusqu'à 0.30°).
-
 ---
 
 ## 6. Utilisation de la Télécommande ESP-NOW (`telecommandev7`)
-
-Le code de la télécommande se trouve dans [`00_Telecommande/telecommandev7/telecommandev7.ino`](00_Telecommande/telecommandev7/telecommandev7.ino) et n'a pas besoin d'être modifié.
-
 ### Commandes disponibles :
 - **Joystick Droit** :
   - **Axe Y (Avancer / Reculer)** : modifie l'angle de consigne d'équilibre.
