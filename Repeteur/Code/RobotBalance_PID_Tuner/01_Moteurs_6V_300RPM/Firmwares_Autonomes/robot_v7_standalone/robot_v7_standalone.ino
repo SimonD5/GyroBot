@@ -1,6 +1,7 @@
 #include <Wire.h>
 #include <esp_now.h>
 #include <WiFi.h>
+#include <esp_wifi.h>
 
 // Parametres de Relevage Automatique (issus du Banc de Test) 
 #define CONF_PWM_KICK           180     // Puissance kick de relevage avant (100 a 200 MAX)

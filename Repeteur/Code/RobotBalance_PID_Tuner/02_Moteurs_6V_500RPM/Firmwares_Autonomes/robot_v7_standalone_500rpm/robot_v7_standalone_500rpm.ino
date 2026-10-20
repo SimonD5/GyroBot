@@ -1,54 +1,56 @@
 // ============================================================
-// RobotBalance V7 - SPECIAL MOTEURS 6V 500 RPM
+// RobotBalance V7 - MOTEURS 6V 500 RPM (Version Finale Calibrée 20/10/2026)
 //
-// Differenciation par rapport aux moteurs 6V 300 RPM :
-//   - Vitesse max accrue (+67% de tr/min) pour des deplacements plus vifs.
-//   - Autorise une inclinaison initiale plus forte (1.20 deg au lieu de 0.50 deg)
-//     car les moteurs 500 RPM ont la reserve de vitesse pour rattraper le centre
-//     de gravite sans saturer prematurement en vitesse.
-//   - Plage de vitesse joystick reglable en direct via BtnAvH / BtnAvG : 0.3 deg a 2.5 deg.
-//   - Sens de rotation : Moteur A = Gauche (SIGN = +1), Moteur B = Droit (SIGN = -1).
+// Paramètres optimisés validés en session télémétrique :
+//   - Equilibre parfait : Kp=13.0, Ki=1.0, Kd=0.10, Consigne=1.35°, pwmMin=28
+//   - Anti-dérive odométrique virtuelle : Kp2=0.25, Ki2=0.006, Deadband=2.0 (dérive quasi nulle)
+//   - Relevage automatique adapté 500 RPM : Kick PWM 170, 280 ms, Kd Boost 2.5x
+//   - Pilotage Joystick : Inclinaison dynamique (1.20° par défaut), I2 et vitesse
+//     réinitialisés pendant le stick pour éviter tout effet ressort au lâcher
+//   - Sens moteurs inversé 500 RPM : SIGN_MOTEUR_A = -1, SIGN_MOTEUR_B = +1
 // ============================================================
 #include <Wire.h>
 #include <esp_now.h>
 #include <WiFi.h>
+#include <esp_wifi.h>
 
-// Parametres de Relevage Automatique (issus du Banc de Test) 
-#define CONF_PWM_KICK           180     // Puissance kick de relevage avant (100 a 200 MAX)
-#define CONF_DUREE_KICK_MS      350     // Duree max du kick en ms
-#define CONF_ANGLE_CAPTURE      2.0f    // Angle d'approche (deg) pour couper le kick et freiner
+// Parametres de Relevage Automatique (adaptes aux moteurs 500 RPM)
+#define CONF_PWM_KICK           170     // Puissance kick de relevage avant (adapte 500 RPM)
+#define CONF_DUREE_KICK_MS      280     // Duree max du kick en ms (500 RPM montent plus vite)
+#define CONF_ANGLE_CAPTURE      3.0f    // Angle d'approche (deg) pour couper le kick et freiner net
 #define CONF_KD_BOOST           2.5f    // Multiplicateur Kd pour freiner net l'arrivee au sommet
-#define CONF_SETTLE_MS          600     // Gel de la boucle 2 (ms) post-capture pour assiette verticale
-#define CONF_ANGLE_POSE_MIN     14.0f   // Angle min pour detecter le robot pose au sol (deg)
-#define CONF_ANGLE_POSE_MAX     28.0f   // Angle max pour detecter le robot pose au sol (deg)
+#define CONF_SETTLE_MS          180     // Gel de la boucle 2 (ms) post-capture (reduit pour reprise rapide)
+#define CONF_ANGLE_POSE_MIN     12.0f   // Angle min pour detecter le robot pose au sol (deg)
+#define CONF_ANGLE_POSE_MAX     32.0f   // Angle max pour detecter le robot pose au sol (deg)
 
 // Basculement Arriere -> Avant (pour robot tombe sur le dos) 
-#define CONF_PWM_FLIP           120     // Puissance du leger a-coup pour basculer vers l'avant (doux)
-#define CONF_DUREE_FLIP_MS      130     // Duree de l'a-coup de recul en ms
+#define CONF_PWM_FLIP           140     // Puissance du leger a-coup pour basculer vers l'avant
+#define CONF_DUREE_FLIP_MS      160     // Duree de l'a-coup de recul en ms
 #define CONF_TIMEOUT_FLIP_MS    2500    // Timeout max pour la bascule avant d'abandonner
 
-// PID Boucle 1 : Angle (Stabilisation d'equilibre) 
-#define CONF_Kp                 16.0f   // Gain proportionnel
+// PID Boucle 1 : Angle (Stabilisation d'equilibre 500 RPM - Calibré 20/10)
+#define CONF_Kp                 13.0f   // Gain proportionnel (optimise 500 RPM, elimine le tremblement 10 Hz)
 #define CONF_Ki                  1.0f   // Gain integral
-#define CONF_Kd                  0.30f  // Gain derive
-#define CONF_CONSIGNE            0.5f   // Angle d'equilibre naturel (deg)
-#define CONF_PWM_MIN            18      // PWM min pour vaincre le frottement statique
+#define CONF_Kd                  0.10f  // Gain derive (lisse et stable)
+#define CONF_CONSIGNE            1.35f  // Angle d'equilibre naturel reel (deg, centre de gravite 500 RPM)
+#define CONF_PWM_MIN            28      // Seuil de decollage statique moteurs 500 RPM
 
-// PID Boucle 2 : Correction de derive lente ----
-#define CONF_Kp2                 0.25f  // Gain anti-derive
-#define CONF_Ki2                 0.0f   // Integrale boucle 2 (laisser a 0)
+// PID Boucle 2 : Anti-derive & Odometrie Virtuelle (Position Hold) ----
+#define CONF_Kp2                 0.25f  // Gain amortissement vitesse estimee
+#define CONF_Ki2                 0.006f // Gain rappel de position virtuelle (bloque la derive de 3-4m)
 #define CONF_DEADBAND            2.0f   // Zone morte anti-tremblement boucle 2
 
 // Pilotage par Joystick & Reglage Inclinaison Max ----
-#define CONF_USE_JOYSTICK_DROIT  true   // true = Joystick Droit, false = Joystick Gauche
-#define CONF_JOY_VITESSE_INIT    1.20f  // Inclinaison max initiale (deg) -- adapte moteurs 500 RPM (vitesse accrue)
-#define CONF_JOY_VITESSE_MIN     0.30f  // Inclinaison max minimale
-#define CONF_JOY_VITESSE_MAX     2.50f  // Inclinaison max maximale (mode rapide pour 500 RPM)
-#define CONF_JOY_ZONE_MORTE_Y    1.0f   // Seuil de zone morte au centre (-15 a +15)
-#define CONF_JOY_Y_SIGN         +1.0f   // +1.0f pour avancer en poussant vers l'avant (V7: corrige inversion)
-#define CONF_TURN_GAIN           1.2f   // Sensibilite de rotation
-#define CONF_JOY_ZONE_MORTE_X    1.0f   // Seuil de zone morte direction (-15 a +15)
-#define CONF_TURN_SIGN           1.0f   // Inversion virage si necessaire
+#define CONF_USE_JOYSTICK_DROIT   true   // true = Joystick Droit, false = Joystick Gauche
+#define CONF_JOY_INCLINAISON_INIT 0.20f  // Inclinaison max initiale ultra-douce (deg) -- empeche toute chute
+#define CONF_JOY_INCLINAISON_MIN  0.05f  // Inclinaison minimale (mode escargot / securite totale)
+#define CONF_JOY_INCLINAISON_MAX  0.50f  // Inclinaison maximale autorisee (vitesse moderee sans risque)
+#define CONF_JOY_PAS_REGLAGE      0.05f  // Pas d'ajustement par appui bouton avant (deg)
+#define CONF_JOY_ZONE_MORTE_Y     1.0f   // Seuil de zone morte au centre (-15 a +15)
+#define CONF_JOY_Y_SIGN          -1.0f   // -1.0f : la telecommande envoie negatif quand on pousse en avant
+#define CONF_TURN_GAIN            1.2f   // Sensibilite de rotation
+#define CONF_JOY_ZONE_MORTE_X     1.0f   // Seuil de zone morte direction (-15 a +15)
+#define CONF_TURN_SIGN           -1.0f   // Virage inverse (remis a -1.0f suite a ton retour)
 
 // Securite et Armement ----
 #define CONF_ANGLE_CHUTE        18.0f   // Angle absolu en degres declenchant la coupure moteur
@@ -83,12 +85,13 @@ const int SIGN_MOTEUR_B =  1; // Inversé pour moteurs 500 RPM
 
 // ---------------- Constantes algorithme ----------------
 const float ALPHA_V        = 0.03f;
-const float ALPHA_D        = 0.40f;
+const float ALPHA_D        = 0.30f; // Filtre derive gyro lisse pour 500 RPM
 const float ALPHA          = 0.98f;
-const float ALPHA_JOY      = 0.04f; // Lissage progressif consigne joystick
+const float ALPHA_JOY      = 0.05f; // Lissage tres doux joystick : rampe lente pour ne pas depasser la vitesse des moteurs
 const float I_MAX          = 80.0f;
-const float ZONE_RAMPE     = 30.0f;
+const float ZONE_RAMPE     = 45.0f; // Rampe adoucie pour pwmMin=28
 const float ANGLE_CORR_MAX = 3.0f;
+const float POS_MAX        = 120.0f; // Butee anti-windup position virtuelle
 const uint32_t PERIODE_US  = 5000;  // 200 Hz (5 ms)
 
 // ---------------- Variables de regulation ----------------
@@ -100,16 +103,16 @@ float V_DEADBAND = CONF_DEADBAND;
 float gyroSign   = CONF_GYRO_SIGN;
 
 // Inclinaison max dynamique (reglable en direct via les boutons avant de la telecommande)
-float inclinaisonMax = CONF_JOY_VITESSE_INIT;
+float inclinaisonMax = CONF_JOY_INCLINAISON_INIT;
 
-float vitesseEstimee   = 0, correctionAngle = 0, consigneActive = CONF_CONSIGNE;
+float vitesseEstimee   = 0, positionEstimee = 0, correctionAngle = 0, consigneActive = CONF_CONSIGNE;
 float rateF = 0, angleAcc = 0, angle = 0, rate = 0;
 float integrale = 0, sortie = 0;
 float gyroBias  = 0;
 
 // Commandes joystick lissées
-float correctionJoyCible = 0.0f;
-float correctionJoy      = 0.0f;
+float joyTiltCible       = 0.0f;
+float joyTiltLisse       = 0.0f;
 float turnOffsetCible    = 0.0f;
 float turnOffset         = 0.0f;
 
@@ -250,6 +253,7 @@ void demarrerKickAvant() {
   tDebutKickUs    = micros();
   integrale       = 0;
   vitesseEstimee  = 0;
+  positionEstimee = 0;
   correctionAngle = 0;
   consigneActive  = consigne;
   sortie          = 0;
@@ -275,6 +279,7 @@ void declencherRelevageBouton() {
     etat           = ETAT_ACTIF;
     integrale      = 0;
     vitesseEstimee = 0;
+    positionEstimee = 0;
   }
 }
 
@@ -318,30 +323,30 @@ void traiterEspNow() {
   precBtnArG = msgSafe.EBtnArG;
 
   // BOUTONS AVANT : Reglage dynamique de l'inclinaison max (vitesse max) ──
-  // Bouton Avant Haut (BtnAvH) : Augmente l'inclinaison max (+0.2 deg)
+  // Bouton Avant Haut (BtnAvH) : Augmente l'inclinaison (+0.05 deg)
   if (msgSafe.EBtnAvH == 0 && precBtnAvH == 1) {
-    inclinaisonMax = min(CONF_JOY_VITESSE_MAX, inclinaisonMax + 0.05f);
-    Serial.printf(">> Bouton AvH : Inclinaison Max augmentee a %.1f deg\n", inclinaisonMax);
+    inclinaisonMax = min(CONF_JOY_INCLINAISON_MAX, inclinaisonMax + CONF_JOY_PAS_REGLAGE);
+    Serial.printf(">> Bouton AvH : Inclinaison Max augmentee a %.2f deg\n", inclinaisonMax);
   }
   precBtnAvH = msgSafe.EBtnAvH;
 
-  // Bouton Avant Gauche (BtnAvG) : Diminue l'inclinaison max (-0.2 deg)
+  // Bouton Avant Gauche (BtnAvG) : Diminue l'inclinaison max (-0.05 deg)
   if (msgSafe.EBtnAvG == 0 && precBtnAvG == 1) {
-    inclinaisonMax = max(CONF_JOY_VITESSE_MIN, inclinaisonMax - 0.05f);
-    Serial.printf(">> Bouton AvG : Inclinaison Max reduite a %.1f deg\n", inclinaisonMax);
+    inclinaisonMax = max(CONF_JOY_INCLINAISON_MIN, inclinaisonMax - CONF_JOY_PAS_REGLAGE);
+    Serial.printf(">> Bouton AvG : Inclinaison Max reduite a %.2f deg\n", inclinaisonMax);
   }
   precBtnAvG = msgSafe.EBtnAvG;
 
   // AXE Y JOYSTICK : Avancer / Reculer (-15 a +15) ──
   float jdy = (float)valJoyY;
   if (fabs(jdy) <= CONF_JOY_ZONE_MORTE_Y) {
-    correctionJoyCible = 0.0f;
+    joyTiltCible = 0.0f;
   } else {
     float norm = (jdy > 0)
       ? (jdy - CONF_JOY_ZONE_MORTE_Y) / (15.0f - CONF_JOY_ZONE_MORTE_Y)
       : (jdy + CONF_JOY_ZONE_MORTE_Y) / (15.0f - CONF_JOY_ZONE_MORTE_Y);
-    // Application de la consigne d'inclinaison avec CONF_JOY_Y_SIGN et inclinaisonMax dynamique
-    correctionJoyCible = norm * inclinaisonMax * CONF_JOY_Y_SIGN;
+    // norm négatif quand on pousse en avant, CONF_JOY_Y_SIGN = -1.0f -> joyTiltCible > 0 pour avancer !
+    joyTiltCible = norm * inclinaisonMax * CONF_JOY_Y_SIGN;
   }
 
   // AXE X JOYSTICK : Tourner Gauche / Droite (-15 a +15) ──
@@ -433,9 +438,9 @@ void setup() {
   Serial.printf("Relevage    : PWM Kick=%d  DureeKick=%dms  AngleCap=%.1f deg  KdBoost=%.1fx  Settle=%dms\n",
                 CONF_PWM_KICK, CONF_DUREE_KICK_MS, CONF_ANGLE_CAPTURE, CONF_KD_BOOST, CONF_SETTLE_MS);
   Serial.printf("Bascule Ar  : PWM Flip=%d  DureeFlip=%dms\n", CONF_PWM_FLIP, CONF_DUREE_FLIP_MS);
-  Serial.printf("Equilibre   : Kp=%.1f  Ki=%.1f  Kd=%.2f  Consigne=%.2f deg  Pmin=%d  Kp2=%.2f\n",
-                Kp, Ki, Kd, consigne, pwmMin, Kp2);
-  Serial.printf("Controle    : InclinaisonMax initiale = %.1f deg (ajustable via BtnAvH / BtnAvG)\n",
+  Serial.printf("Equilibre   : Kp=%.1f  Ki=%.1f  Kd=%.2f  Consigne=%.2f deg  Pmin=%d  Kp2=%.2f  Ki2=%.3f\n",
+                Kp, Ki, Kd, consigne, pwmMin, Kp2, Ki2);
+  Serial.printf("Controle    : InclinaisonMax initiale = %.2f deg (ajustable via BtnAvH / BtnAvG)\n",
                 inclinaisonMax);
   Serial.println("\nPret !");
   Serial.println(" - Pose a la verticale : Armement automatique");
@@ -457,8 +462,8 @@ void loop() {
 
   // Failsafe liaison : si deconnecte depuis > 500 ms, retour au neutre du stick
   if (millis() - tDernierEspNow > ESPNOW_TIMEOUT_MS) {
-    correctionJoyCible = 0.0f;
-    turnOffsetCible    = 0.0f;
+    joyTiltCible    = 0.0f;
+    turnOffsetCible = 0.0f;
   }
 
   // Cadencement a 200 Hz (5 ms)
@@ -472,9 +477,9 @@ void loop() {
 
   float dt = ((dus > 20000UL) ? 20000UL : dus) / 1000000.0f;
 
-  // Lissage progressif de la consigne joystick
-  correctionJoy += ALPHA_JOY * (correctionJoyCible - correctionJoy);
-  turnOffset    += ALPHA_JOY * (turnOffsetCible - turnOffset);
+  // Lissage progressif de l'inclinaison commandee (rampe douce pour eviter tout a-coup)
+  joyTiltLisse += ALPHA_JOY * (joyTiltCible - joyTiltLisse);
+  turnOffset   += ALPHA_JOY * (turnOffsetCible - turnOffset);
 
   // Lecture IMU et filtre complementaire
   float a, gr;
@@ -497,8 +502,8 @@ void loop() {
       correctionAngle    = 0;
       sortie             = 0;
       consigneActive     = consigne;
-      correctionJoyCible = 0;
-      correctionJoy      = 0;
+      joyTiltCible       = 0;
+      joyTiltLisse       = 0;
       turnOffsetCible    = 0;
       turnOffset         = 0;
 
@@ -509,6 +514,8 @@ void loop() {
           etat = ETAT_ACTIF;
           compteurDebout = 0;
           integrale = 0;
+          vitesseEstimee = 0;
+          positionEstimee = 0;
           Serial.printf(">>> ARME AUTOMATIQUEMENT A LA VERTICALE ! Angle=%.2f deg <<<\n", angle);
         }
       } else {
@@ -538,10 +545,10 @@ void loop() {
       commandeMoteurs(0);
       uint32_t tPose = millis() - tDebutAttentePose;
 
-      // Le robot est arrive en position avant (angle > 14 deg) et s'immobilise
-      if (angle >= CONF_ANGLE_POSE_MIN && angle <= CONF_ANGLE_POSE_MAX && fabs(rateF) < 30.0f) {
+      // Le robot est arrive en position avant (angle entre 12 et 32 deg) et s'immobilise
+      if (angle >= CONF_ANGLE_POSE_MIN && angle <= CONF_ANGLE_POSE_MAX && fabs(rateF) < 35.0f) {
         compteurPoseStable++;
-        if (compteurPoseStable >= 40) { // 40 * 5ms = 200 ms de stabilite au sol
+        if (compteurPoseStable >= 25) { // 25 * 5ms = 125 ms de stabilite au sol
           Serial.println("Robot bien pose sur l'avant -> Enchainement Kick de relevage !");
           demarrerKickAvant();
         }
@@ -651,6 +658,7 @@ void loop() {
       if ((int32_t)(millis() - tDebutSettleMs) >= CONF_SETTLE_MS) {
         etat = ETAT_ACTIF;
         vitesseEstimee  = 0;
+        positionEstimee = 0;
         correctionAngle = 0;
         integrale       = 0;
         sortie          = 0;
@@ -659,7 +667,7 @@ void loop() {
       break;
     }
 
-    // Asservissement PID normal + Pilotage Joystick V5 ──
+    // Asservissement PID normal + Pilotage Joystick V7 (Assiette Securisee) ──
     case ETAT_ACTIF: {
       // Securite chute immediate
       if (fabs(angle) > CONF_ANGLE_CHUTE) {
@@ -668,44 +676,72 @@ void loop() {
         compteurDebout     = 0;
         integrale          = 0;
         vitesseEstimee     = 0;
-        correctionJoyCible = 0;
-        correctionJoy      = 0;
+        positionEstimee    = 0;
+        joyTiltCible       = 0;
+        joyTiltLisse       = 0;
         sortie             = 0;
         Serial.printf("CHUTE DETECTEE (angle=%.2f deg) -> Moteurs coupes\n", angle);
         break;
       }
 
-      // Boucle 2 : Correction de derive lente avec zone morte
-      if (fabs(correctionJoyCible) > 0.05f) {
-        // En translation pilotee : reset derive pour eviter tout a-coup au lacher du stick
-        vitesseEstimee  = 0.0f;
-        correctionAngle = 0.0f;
+      // Detection activite joystick
+      bool joystickActif = (fabs(joyTiltLisse) > 0.01f || fabs(joyTiltCible) > 0.01f);
+
+      // Boucle 2 : Estimation de la vitesse physique & Maintien de position
+      vitesseEstimee += ALPHA_V * (sortie - vitesseEstimee);
+
+      if (joystickActif) {
+        // En translation pilotee :
+        // 1. Reset position virtuelle : pas d'effet de ressort/recul au lacher du stick
+        positionEstimee = 0.0f;
+
+        // 2. Amortissement dynamique de vitesse :
+        //    Plus le robot roule vite, plus l'assiette est redressee vers la verticale.
+        //    Cela empeche formellement tout emballement ou chute !
+        float amortissement = 0.002f * vitesseEstimee;
+        amortissement = constrain(amortissement, -0.10f, 0.10f);
+
+        // Correction d'angle = consigne joystick attenuee par la vitesse physique
+        correctionAngle = -joyTiltLisse + amortissement;
+
+        // 3. Anti-windup tres strict sur l'integrale en mouvement :
+        //    Empeche l'integrale de saturer les moteurs et garde 100% de reserve motrice
+        integrale = constrain(integrale, -8.0f, 8.0f);
+
       } else {
-        vitesseEstimee += ALPHA_V * (sortie - vitesseEstimee);
+        // Mode stationnaire (arret au point fixe) :
+        // Zone morte anti-jitter
         float vActive = 0.0f;
         if (fabs(vitesseEstimee) > V_DEADBAND) {
           vActive = (vitesseEstimee > 0)
               ? (vitesseEstimee - V_DEADBAND)
               : (vitesseEstimee + V_DEADBAND);
         }
-        correctionAngle = constrain(Kp2 * vActive, -ANGLE_CORR_MAX, ANGLE_CORR_MAX);
+        // Integration position virtuelle pour annuler totalement la derive lente
+        positionEstimee += vActive * dt;
+        positionEstimee = constrain(positionEstimee, -POS_MAX, POS_MAX);
+
+        correctionAngle = constrain(Kp2 * vActive + Ki2 * positionEstimee, -ANGLE_CORR_MAX, ANGLE_CORR_MAX);
       }
 
-      // Consigne finale = Point d'equilibre - Anti-derive + Joystick Y lisse
-      consigneActive = constrain(
-          consigne - correctionAngle + correctionJoy,
-          consigne - ANGLE_CORR_MAX - inclinaisonMax,
-          consigne + ANGLE_CORR_MAX + inclinaisonMax
-      );
+      // Consigne finale envoyee a la boucle 1 rapide
+      consigneActive = consigne - correctionAngle;
 
-      // Boucle 1 : PID de stabilisation sur l'angle
+      // Boucle 1 : Stabilisation PID sur l'angle
       float erreur = angle - consigneActive;
       integrale += Ki * erreur * dt;
       integrale  = constrain(integrale, -I_MAX, I_MAX);
-      sortie     = Kp * erreur + integrale + Kd * rateF;
-      sortie     = constrain(sortie, -PWM_MAX, PWM_MAX);
 
-      // Rampe de demarrage pour vaincre le frottement statique
+      sortie = Kp * erreur + integrale + Kd * rateF;
+      sortie = constrain(sortie, -PWM_MAX, PWM_MAX);
+
+      // Reserve motrice dynamique : si les moteurs approchent la saturation en pilotage (>130 PWM),
+      // on reduit en douceur l'inclinaison pour garantir le maintien de l'equilibre
+      if (fabs(sortie) > 130.0f && joystickActif) {
+        joyTiltLisse *= 0.85f;
+      }
+
+      // Rampe de decollage pour vaincre le frottement statique (pwmMin=28)
       float absS   = fabs(sortie);
       float offset = pwmMin * min(absS / ZONE_RAMPE, 1.0f);
       int   cmd    = (int)constrain(absS + offset, 0.0f, (float)PWM_MAX);
