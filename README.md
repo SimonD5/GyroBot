@@ -39,28 +39,29 @@ The overall system is organized around four cooperating elements:
 * **Dynamic Simulation**: Webots physics simulation with sensor and motor controllers (`Simulation/`).
 * **Hardware Prototyping & Balance Bench**: Physical prototype with ESP32-C6, MPU6050 IMU, motor drivers, and a real-time Wi-Fi cascade PID tuning tool (`Repeteur/Code/`).
 * **Remote Controller Design**: Circuit schematic, component selection, and 3D enclosure modeling (`Remote/`).
-* **Validation & Test Protocols**: Comprehensive test plan (`TestRobot.md`) covering wireless range, response latency, mapping precision, and balance robustness.
+* **Validation & Test Protocols**: Comprehensive test plan (`Documentation/markdown/TestRobot.md`) covering wireless range, response latency, mapping precision, and balance robustness.
 
 ## Project Structure
 
 ```text
 GyroBot/
-├── README.md                          # Project overview and architecture
-├── Gantt.xlsx                         # Project planning and milestones
-├── 3D/                                # Robot CAD models (STL) and concept renders
-├── Documentation/                     # Functional analysis, specifications, and test plans
-│   ├── Images/                        # Architecture and functional diagrams
-│   ├── HMI/                           # Web interface prototype and mockups
-│   └── TestRobot.md                   # System test and validation protocol
+├── Datasheet_LiDAR/                   # LiDAR technical datasheets and protocols
+├── Documentation/                     # Specifications, reports, and architecture
+│   ├── Excel/                         # Project tracking and functional matrices
+│   ├── HMI/                           # Web interface mockups and assets
+│   ├── Images/                        # Functional diagrams and system schemes
+│   ├── markdown/                      # Analysis reports (FMEA, CSR, test plans)
+│   └── rapport/                       # Project deliverables and use cases
 ├── Remote/                            # Dedicated remote controller
-│   ├── 3D/                            # Remote casing designs (V1, V2)
-│   ├── ComponentChoiceRemote.xlsx     # Bill of materials and hardware selection
-│   └── telecommandeSchematic.png      # Controller wiring schematic
-├── Repeteur/                          # Prototype chassis and firmware
-│   ├── 3D/                            # Prototype mechanical parts
-│   └── Code/                          # Motor/IMU tests & Wi-Fi PID cascade tuning suite
+│   └── 3D/                            # Enclosure CAD models and renders (V1, V2)
+├── Repeteur/                          # Prototype chassis and balance bench
+│   ├── 3D/                            # Test bench mechanical parts
+│   └── Code/                          # Validation firmware & Wi-Fi PID tuning tools
+├── Robot/                             # Main GyroBot platform
+│   ├── 3D/                            # Robot CAD files and renders (V1, V2)
+│   ├── Code/                          # Embedded firmware (IMU, encoders, drivers)
+│   └── motor_and_elec_schematic/      # Electrical wiring diagrams and motor specs
 └── Simulation/                        # Webots simulation environment
-    ├── controllers/                   # Simulation control code (C++)
-    ├── worlds/                        # Webots simulation world
-    └── VideoSimulation.mp4            # Demonstration video
+    ├── controllers/                   # Robot control programs (C++)
+    └── worlds/                        # Simulation scenes and environment models
 ```
