@@ -1,10 +1,3 @@
-# ==============================================================================
-# GitIgnore pour le projet Gyrobot
-# ==============================================================================
-
-# ------------------------------------------------------------------------------
-# Fichiers exécutables et binaires (compilation & scripts Windows)
-# ------------------------------------------------------------------------------
 *.exe
 *.bat
 *.cmd
@@ -12,142 +5,77 @@
 *.out
 *.app
 *.bin
-
-# Bibliothèques compilées
 *.dll
 *.so
 *.dylib
 *.a
 *.lib
-
-# ------------------------------------------------------------------------------
-# Fichiers et dossiers de compilation (Build)
-# ------------------------------------------------------------------------------
 [Bb]uild/
 [Bb]in/
 [Oo]bj/
 [Oo]ut/
 [Dd]ebug/
 [Rr]elease/
-
-# Fichiers objets et dépendances C/C++
 *.o
 *.obj
 *.d
-
-# ------------------------------------------------------------------------------
-# Simulateur Webots
-# ------------------------------------------------------------------------------
-# Fichiers temporaires de perspective et d'agencement des fenêtres Webots (UI)
 Simulation/worlds/*.wbproj
 Simulation/worlds/.*.wbproj
-
-# Cache Webots
 .cache/
-
-# ------------------------------------------------------------------------------
-# Python (Outils de tuning PID / scripts)
-# ------------------------------------------------------------------------------
 __pycache__/
 *.py[cod]
 *$py.class
 *.pyo
-
-# Environnements virtuels
 .venv/
 venv/
 env/
 ENV/
 env.bak/
 venv.bak/
-
-# Fichiers de distribution & packages
 *.egg-info/
 .eggs/
 dist/
 develop-eggs/
-
-# Jupyter Notebook checkpoints
 .ipynb_checkpoints/
-
-# ------------------------------------------------------------------------------
-# Systèmes Embarqués / Arduino / ESP / PlatformIO
-# ------------------------------------------------------------------------------
-# Fichiers compilés pour microcontrôleurs
 *.hex
 *.elf
 *.eep
 *.lst
 *.map
-
-# Dossiers de build Arduino IDE & PlatformIO
 .arduino/
 .pio/
 .pioenvs/
 .piolibdeps/
-
-# ------------------------------------------------------------------------------
-# IDEs et éditeurs de code
-# ------------------------------------------------------------------------------
-# Visual Studio Code
 .vscode/
-# Conserver extensions.json si souhaité en décommentant la ligne suivante :
-# !.vscode/extensions.json
-
-# Visual Studio
 .vs/
 *.suo
 *.user
 *.userosscache
 *.sln.docstates
-
-# JetBrains (CLion, PyCharm, etc.)
 .idea/
 *.iml
 cmake-build-*/
-
-# STM32CubeIDE / Eclipse
 .metadata/
 .settings/
 .loadpath
-
-# Editeurs divers & sauvegardes
 *.swp
 *.swo
 *~
 *.bak
-
-# ------------------------------------------------------------------------------
-# Fichiers temporaires bureautique (Microsoft Office / Excel / Word)
-# Fichiers de verrouillage temporaires (ex: ~$nom_fichier.xlsx)
-# ------------------------------------------------------------------------------
 ~$*.xlsx
 ~$*.xls
 ~$*.docx
 ~$*.doc
 ~$*.pptx
 ~$*.ppt
-
-# ------------------------------------------------------------------------------
-# Fichiers temporaires CAO / 3D
-# ------------------------------------------------------------------------------
 *.step.bak
 *.stl.bak
 *.dwg.bak
 *.~*
-
-# ------------------------------------------------------------------------------
-# Logs et fichiers de débogage
-# ------------------------------------------------------------------------------
 *.log
 *.stackdump
 *.dmp
 *.crash
-
-# ------------------------------------------------------------------------------
-# Fichiers système (OS)
-# ------------------------------------------------------------------------------
-# Windows
 Thumbs.db
 Thumbs.db:encryptable
 ehthumbs.db
@@ -155,14 +83,10 @@ ehthumbs_vista.db
 [Dd]esktop.ini
 $RECYCLE.BIN/
 *.lnk
-
-# macOS
 .DS_Store
 .AppleDouble
 .LSOverride
 ._*
-
-# Linux
 .directory
 .Trash-*
 .fuse_hidden*
