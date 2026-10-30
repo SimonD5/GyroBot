@@ -675,8 +675,7 @@
             <section id="t2" class="tab">
                 <div class="split">
                     <div class="c">
-                        <h3>Carte lidar <span><span class="ch nd">8 Hz</span> <span class="ch nd">Robot au
-                                    centre</span></span></h3>
+                        <h3>Carte lidar <span><span class="ch nd">8 Hz</span> <span class="ch nd">Robot au centre</span></span></h3>
                         <svg viewBox="0 0 600 520" role="img" aria-label="Carte lidar en cours de construction">
                             <rect width="600" height="520" rx="18" fill="#0B1F5C" />
                             <g transform="translate(300 260)">
@@ -686,31 +685,43 @@
                                     <circle r="255" />
                                     <path d="M0-255V255M-290 0H290" />
                                 </g>
-                                <g fill="#22C3F0" font-size="11" font-family="Nunito,sans-serif"><text x="4" y="-88">1
-                                        m</text><text x="4" y="-173">2 m</text><text x="4" y="-238">3 m</text></g>
+                                <g fill="#22C3F0" font-size="11" font-family="Nunito,sans-serif">
+                                    <text x="4" y="-88">1 m</text>
+                                    <text x="4" y="-173">2 m</text>
+                                    <text x="4" y="-238">3 m</text>
+                                </g>
                                 <path d="M0 0L-108-215A240 240 0 0 1 108-215Z" fill="#22C3F0" fill-opacity=".14" />
                                 <g id="m2"></g>
                                 <path d="M0-16L-11 12H11Z" fill="#F0A93A" stroke="#fff" stroke-width="1.5" />
                             </g>
                         </svg>
-                        <div class="row"><button class="sec">Centrer</button><button class="sec">Zoom −</button><button
-                                class="sec">Zoom +</button><button class="sec">Exporter PNG</button><button
-                                class="sec">Exporter CSV</button></div>
+                        <div class="row">
+                            <button class="sec">Centrer</button>
+                            <button class="sec">Zoom −</button>
+                            <button class="sec">Zoom +</button>
+                            <button class="sec">Exporter PNG</button>
+                            <button class="sec">Exporter CSV</button>
+                        </div>
                     </div>
+
+                    <!-- partie caméra -->
                     <div style="display:grid;gap:14px;align-content:start">
                         <div class="c">
-                            <h3>Caméra avant <span class="ch nd">2 Hz</span></h3>
-                            <div class="cam"><svg viewBox="0 0 160 120">
-                                    <rect width="160" height="120" fill="#8DA2C8" />
-                                    <polygon points="0,0 52,38 52,84 0,120" fill="#6F86B4" />
-                                    <polygon points="160,0 108,38 108,84 160,120" fill="#7A90BC" />
-                                    <rect x="52" y="38" width="56" height="46" fill="#A9BAD9" />
-                                    <rect x="72" y="50" width="16" height="34" fill="#F0A93A" />
-                                    <polygon points="0,120 52,84 108,84 160,120" fill="#5B6FA0" />
-                                </svg></div>
-                            <div class="row"><span class="ch nd">160×120</span><span class="ch nd">Âge 0,4 s</span><span
-                                    class="ch nd">1 · 2 · 5 Hz</span></div>
+                            <h3>
+                                Caméra avant 
+                                <button id="btn_cam" class="sec" style="padding: 2px 12px; font-size: 12px;">Allumer</button>
+                            </h3>
+                            <div class="cam" style="aspect-ratio: 4/3; background: #0B1F5C; display: flex; align-items: center; justify-content: center;">
+                                <img id="flux_cam" src="" alt="Flux vidéo" style="width: 100%; height: 100%; object-fit: cover; display: none;" />
+                                <span id="cam_off_msg" style="color: var(--mute); font-weight: 800; font-size: 13px;">Caméra éteinte</span>
+                            </div>
+                            <div class="row">
+                                <button id="btn_res" class="sec" style="padding: 2px 10px; font-size: 12px;">320×240</button>
+                                <span id="lbl_age" class="ch nd">Âge 0,0 s</span>
+                                <button id="btn_fps" class="sec" style="padding: 2px 10px; font-size: 12px;">2 Hz</button>
+                            </div>
                         </div>
+
                         <div class="c">
                             <h3>Distances lidar</h3>
                             <div class="kv"><span>Avant</span><b>1,85 m</b></div>
@@ -869,25 +880,142 @@
         </main>
     </div>
     <script>
-        const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
-        $$('.wing button').forEach(b => b.onclick = () => { $$('.wing button,.tab').forEach(x => x.classList.remove('on')); b.classList.add('on'); $('#' + b.dataset.t).classList.add('on') });
-        $('#tk').onclick = () => { const p = document.body.classList.toggle('pc'); $('#tk').textContent = p ? 'Rendre à la télécommande' : 'Prendre la main'; $('#mode').textContent = p ? 'PC aux commandes · télécommande en veille' : 'Lecture seule · télécommande active'; $('#cap').textContent = p ? 'PC aux commandes' : 'Télécommande active'; $('#bk').textContent = p ? 'PC' : 'RC'; $('#mode').classList.toggle('or', !p); $$('.pin').forEach(i => { i.disabled = !p }); $$('input.pin[type=text]').forEach(i => i.placeholder = p ? 'Commande (ex. M114)' : 'Sortie seule : prends la main pour envoyer une commande') };
-        $$('input[type=range]').forEach(i => i.oninput = () => i.previousElementSibling.querySelector('b').textContent = (+i.value).toFixed(2).replace('.', ','));
-        const R = [[-2.2, 2], [.4, 2.6], [2.1, 2.2], [2.5, -.4], [2, -2.3], [-1.4, -2.6], [-2.5, -1]], O = [[.8, .6], [1.6, .6], [1.6, 1.5], [.8, 1.5]];
-        function dots(P, sc, r, f) { let s = ''; P.forEach((a, i) => { const b = P[(i + 1) % P.length], k = Math.floor(Math.hypot(b[0] - a[0], b[1] - a[1]) / .1); for (let j = 0; j < k; j++) { const t = j / k, x = a[0] + (b[0] - a[0]) * t + Math.sin(i * 7 + j) * .02, y = a[1] + (b[1] - a[1]) * t + Math.cos(j * 3 + i) * .02; s += `<circle cx="${(x * sc).toFixed(1)}" cy="${(-y * sc).toFixed(1)}" r="${r}" fill="${f}"/>` } }); return s }
-        $('#m1').innerHTML = dots(R, 28, 1.5, '#fff') + dots(O, 28, 1.5, '#fff'); $('#m2').innerHTML = dots(R, 85, 2.4, '#fff') + dots(O, 85, 2.4, '#F0A93A');
-        function ch(id, S, a, b) { let g = ''; for (let i = 0; i <= 4; i++) { const y = 14 + 172 * i / 4 * .93; g += `<line x1="40" x2="560" y1="${y}" y2="${y}" class="gr"/><text x="0" y="${y + 4}" class="tx">${(b - (b - a) * i / 4).toFixed(1)}</text>` } S.forEach(s => { let d = ''; for (let i = 0; i <= 120; i++) { const v = s.f(i / 2), x = 40 + 520 * i / 120, y = 14 + 160 * (b - v) / (b - a); d += (i ? 'L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1) } g += `<path d="${d}" fill="none" stroke="${s.c}" stroke-width="3" stroke-linejoin="round"${s.d ? ' stroke-dasharray="6 5"' : ''}/>` }); $(id).innerHTML = g + '<text x="40" y="198" class="tx">−60 s</text><text x="560" y="198" class="tx" text-anchor="end">maintenant</text>' }
-        ch('#c1', [{ c: '#F0A93A', d: 1, f: t => 0 }, { c: '#22C3F0', f: t => 3 * Math.sin(t / 2.1) * Math.exp(-t / 35) + .25 * Math.sin(t * 2.9) }], -4, 4);
-        ch('#c2', [{ c: '#22C3F0', f: t => .35 + .05 * Math.sin(t / 3) }, { c: '#2FB37A', f: t => .35 + .05 * Math.sin(t / 3 + .6) }], 0, .6);
-        ch('#c3', [{ c: '#22C3F0', f: t => 42 + 12 * Math.sin(t / 2.6) * Math.exp(-t / 45) }, { c: '#2FB37A', f: t => 45 + 12 * Math.sin(t / 2.6 + .5) * Math.exp(-t / 45) }], 0, 100);
-        const L = [['OK', '12:41:03', 'Liaison série ouverte · /dev/ttyUSB0 · 115200'], ['INFO', '12:41:04', 'IMU calibrée · biais gyro 0,02 °/s'], ['INFO', '12:41:05', 'Lidar : 360 pts/tour à 8 Hz'], ['OK', '12:41:06', 'Boucle d\'équilibre démarrée · 200 Hz'], ['INFO', '12:41:20', 'Mode : télécommande (RC)'], ['WARN', '12:43:11', 'Paquets perdus : 2 sur 640 (0,3 %)'], ['INFO', '12:44:02', 'Obstacle à 0,42 m · avant gauche'], ['WARN', '12:46:37', 'Batterie 12,1 V · 87 %'], ['ERR', '12:47:15', 'Timeout caméra · image ignorée'], ['INFO', '12:47:16', 'Caméra reprise · 2 Hz']];
-        $('#log').innerHTML = L.map(l => `<div class="l ${l[0]}"><span>${l[1]}</span><b>${l[0]}</b>${l[2]}</div>`).join('');
-        $$('.f').forEach(b => b.onclick = () => { $('#log').classList.toggle('h' + b.dataset.f); b.style.opacity = b.style.opacity === '.5' ? '' : '.5' });
-        $$('.hit').forEach(g => g.onclick = () => { $$('.wing button,.tab').forEach(x => x.classList.remove('on')); const b = $(`.wing button[data-t="${g.dataset.t}"]`); if (b) { b.classList.add('on'); $('#' + g.dataset.t).classList.add('on') } });
-        const CG = 8, CS = 21, CX = 606, CY = 201, CPAL = ['#8DA2C8', '#7A90BC', '#6F86B4', '#A9BAD9', '#5B6FA0'];
-        let cCells = Array.from({ length: CG * CG }, (_, i) => { const r = Math.floor(i / CG); return r < 3 ? 0 : r < 4 ? 1 + i % 2 : r < 6 ? 3 : 4 });
-        function drawCam() { $('#camPix').innerHTML = cCells.map((p, i) => `<rect x="${CX + (i % CG) * CS}" y="${CY + Math.floor(i / CG) * CS}" width="${CS}" height="${CS}" fill="${CPAL[p]}"/>`).join('') + `<rect x="${CX + 3 * CS}" y="${CY + 5 * CS}" width="30" height="30" fill="#F0A93A"/>` }
-        drawCam(); setInterval(() => { cCells[Math.floor(Math.random() * 64)] = Math.floor(Math.random() * 5); drawCam() }, 200);
+    // Gestion IHM et onglets
+    const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+    $$('.wing button').forEach(b => b.onclick = () => { $$('.wing button,.tab').forEach(x => x.classList.remove('on')); b.classList.add('on'); $('#' + b.dataset.t).classList.add('on') });
+    $('#tk').onclick = () => { const p = document.body.classList.toggle('pc'); $('#tk').textContent = p ? 'Rendre à la télécommande' : 'Prendre la main'; $('#mode').textContent = p ? 'PC aux commandes · télécommande en veille' : 'Lecture seule · télécommande active'; $('#cap').textContent = p ? 'PC aux commandes' : 'Télécommande active'; $('#bk').textContent = p ? 'PC' : 'RC'; $('#mode').classList.toggle('or', !p); $$('.pin').forEach(i => { i.disabled = !p }); $$('input.pin[type=text]').forEach(i => i.placeholder = p ? 'Commande (ex. M114)' : 'Sortie seule : prends la main pour envoyer une commande') };
+    $$('input[type=range]').forEach(i => i.oninput = () => i.previousElementSibling.querySelector('b').textContent = (+i.value).toFixed(2).replace('.', ','));
+    
+    const R = [[-2.2, 2], [.4, 2.6], [2.1, 2.2], [2.5, -.4], [2, -2.3], [-1.4, -2.6], [-2.5, -1]], O = [[.8, .6], [1.6, .6], [1.6, 1.5], [.8, 1.5]];
+    function dots(P, sc, r, f) { let s = ''; P.forEach((a, i) => { const b = P[(i + 1) % P.length], k = Math.floor(Math.hypot(b[0] - a[0], b[1] - a[1]) / .1); for (let j = 0; j < k; j++) { const t = j / k, x = a[0] + (b[0] - a[0]) * t + Math.sin(i * 7 + j) * .02, y = a[1] + (b[1] - a[1]) * t + Math.cos(j * 3 + i) * .02; s += `<circle cx="${(x * sc).toFixed(1)}" cy="${(-y * sc).toFixed(1)}" r="${r}" fill="${f}"/>` } }); return s }
+    if ($('#m1')) $('#m1').innerHTML = dots(R, 28, 1.5, '#fff') + dots(O, 28, 1.5, '#fff');
+    if ($('#m2')) $('#m2').innerHTML = dots(R, 85, 2.4, '#fff') + dots(O, 85, 2.4, '#F0A93A');
+
+    function ch(id, S, a, b) { if(!$(id)) return; let g = ''; for (let i = 0; i <= 4; i++) { const y = 14 + 172 * i / 4 * .93; g += `<line x1="40" x2="560" y1="${y}" y2="${y}" class="gr"/><text x="0" y="${y + 4}" class="tx">${(b - (b - a) * i / 4).toFixed(1)}</text>` } S.forEach(s => { let d = ''; for (let i = 0; i <= 120; i++) { const v = s.f(i / 2), x = 40 + 520 * i / 120, y = 14 + 160 * (b - v) / (b - a); d += (i ? 'L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1) } g += `<path d="${d}" fill="none" stroke="${s.c}" stroke-width="3" stroke-linejoin="round"${s.d ? ' stroke-dasharray="6 5"' : ''}/>` }); $(id).innerHTML = g + '<text x="40" y="198" class="tx">−60 s</text><text x="560" y="198" class="tx" text-anchor="end">maintenant</text>' }
+    ch('#c1', [{ c: '#F0A93A', d: 1, f: t => 0 }, { c: '#22C3F0', f: t => 3 * Math.sin(t / 2.1) * Math.exp(-t / 35) + .25 * Math.sin(t * 2.9) }], -4, 4);
+    ch('#c2', [{ c: '#22C3F0', f: t => .35 + .05 * Math.sin(t / 3) }, { c: '#2FB37A', f: t => .35 + .05 * Math.sin(t / 3 + .6) }], 0, .6);
+    ch('#c3', [{ c: '#22C3F0', f: t => 42 + 12 * Math.sin(t / 2.6) * Math.exp(-t / 45) }, { c: '#2FB37A', f: t => 45 + 12 * Math.sin(t / 2.6 + .5) * Math.exp(-t / 45) }], 0, 100);
+
+    const L = [['OK', '12:41:03', 'Liaison série ouverte · /dev/ttyUSB0 · 115200'], ['INFO', '12:41:04', 'IMU calibrée · biais gyro 0,02 °/s'], ['INFO', '12:41:05', 'Lidar : 360 pts/tour à 8 Hz'], ['OK', '12:41:06', 'Boucle d\'équilibre démarrée · 200 Hz'], ['INFO', '12:41:20', 'Mode : télécommande (RC)'], ['WARN', '12:43:11', 'Paquets perdus : 2 sur 640 (0,3 %)'], ['INFO', '12:44:02', 'Obstacle à 0,42 m · avant gauche'], ['WARN', '12:46:37', 'Batterie 12,1 V · 87 %'], ['ERR', '12:47:15', 'Timeout caméra · image ignorée'], ['INFO', '12:47:16', 'Caméra reprise · 2 Hz']];
+    if ($('#log')) $('#log').innerHTML = L.map(l => `<div class="l ${l[0]}"><span>${l[1]}</span><b>${l[0]}</b>${l[2]}</div>`).join('');
+    $$('.f').forEach(b => b.onclick = () => { $('#log').classList.toggle('h' + b.dataset.f); b.style.opacity = b.style.opacity === '.5' ? '' : '.5' });
+    $$('.hit').forEach(g => g.onclick = () => { $$('.wing button,.tab').forEach(x => x.classList.remove('on')); const b = $(`.wing button[data-t="${g.dataset.t}"]`); if (b) { b.classList.add('on'); $('#' + g.dataset.t).classList.add('on') } });
+
+    //Logique bouton Caméra
+    let cameraActive = false;
+    const btnCam = document.getElementById('btn_cam');
+    const fluxCam = document.getElementById('flux_cam');
+    const camOffMsg = document.getElementById('cam_off_msg');
+
+    if (btnCam) {
+        btnCam.onclick = () => {
+            cameraActive = !cameraActive;
+            if (cameraActive) {
+                btnCam.textContent = "Éteindre";
+                btnCam.classList.remove('sec');
+                btnCam.classList.add('dg');
+                if (fluxCam) fluxCam.style.display = 'block';
+                if (camOffMsg) camOffMsg.style.display = 'none';
+            } else {
+                btnCam.textContent = "Allumer";
+                btnCam.classList.remove('dg');
+                btnCam.classList.add('sec');
+                if (fluxCam) {
+                    fluxCam.style.display = 'none';
+                    fluxCam.src = '';
+                }
+                if (camOffMsg) camOffMsg.style.display = 'block';
+            }
+        };
+    }
+
+    //Connexion au serveur Raspberry Pi
+    // 192.168.1.137 ou 'localhost' si nav tourne directement sur rasp
+    const socket = new WebSocket('ws://192.168.1.137:8765');
+
+    socket.onopen = () => {
+        console.log("Connecté au serveur du Gyrobot !");
+    };
+
+    socket.onmessage = (event) => {
+        const donnees = JSON.parse(event.data);
+
+        // Mise à jour de la vidéo si allumée
+        if (cameraActive && donnees.image_cam && fluxCam) {
+            fluxCam.src = donnees.image_cam;
+        }
+
+        // Mise à jour des valeurs texte
+        const eBat = document.getElementById('val_batterie');
+        if (eBat) eBat.innerText = "12,1 V · " + donnees.batterie + " %";
+
+        const eInc = document.getElementById('val_inclinaison');
+        if (eInc) eInc.innerText = donnees.inclinaison + "°";
+
+        const eVit = document.getElementById('val_vitesses');
+        if (eVit) eVit.innerText = donnees.vitesse_gauche + " / " + donnees.vitesse_droite + " m/s";
+
+        const eLid = document.getElementById('val_lidar');
+        if (eLid) eLid.innerText = donnees.lidar_avant + " m";
+    };
+
+    socket.onerror = (err) => {
+        console.error("Erreur de connexion WebSocket :", err);
+    };
+    //Réglages cam (résolution et fréquence)
+    const resolutions = [[160, 120], [320, 240], [640, 480]];
+    let idxRes = 1; // Par défaut : 320x240
+
+    const frequences = [2, 5, 10, 20];
+    let idxFps = 1; // Par défaut : 2 Hz
+
+    const btnRes = document.getElementById('btn_res');
+    const btnFps = document.getElementById('btn_fps');
+    const lblAge = document.getElementById('lbl_age');
+
+    function envoyerConfigCam() {
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({
+                cmd: "cam_config",
+                res: resolutions[idxRes],
+                fps: frequences[idxFps]
+            }));
+        }
+    }
+
+    // bascule : 160x120 -> 320x240 -> 640x480
+    if (btnRes) {
+        btnRes.onclick = () => {
+            idxRes = (idxRes + 1) % resolutions.length;
+            const [w, h] = resolutions[idxRes];
+            btnRes.textContent = `${w}×${h}`;
+            envoyerConfigCam();
+        };
+    }
+
+    //bascule : 2 Hz -> 5 Hz -> 10 Hz -> 20 Hz
+    if (btnFps) {
+        btnFps.onclick = () => {
+            idxFps = (idxFps + 1) % frequences.length;
+            btnFps.textContent = `${frequences[idxFps]} Hz`;
+            envoyerConfigCam();
+        };
+    }
+
+    //gestionnaire de reception des messages WebSockets
+    socket.onmessage = (event) => {
+        const donnees = JSON.parse(event.data);
+
+        // Calcul en temps réel latence image
+        if (donnees.timestamp && lblAge) {
+            const ageSec = ((Date.now() - donnees.timestamp) / 1000).toFixed(1);
+            lblAge.innerText = `Latence ${ageSec} s`;
+        }
+
+        if (cameraActive && donnees.image_cam && fluxCam) {
+            fluxCam.src = donnees.image_cam;
+        }
+    };
     </script>
 </body>
 
