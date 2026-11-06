@@ -717,7 +717,7 @@
                             </div>
                             <div class="row">
                                 <button id="btn_res" class="sec" style="padding: 2px 10px; font-size: 12px;">320×240</button>
-                                <span id="lbl_age" class="ch nd">Âge 0,0 s</span>
+                                <span id="lbl_age" class="ch nd">Latence 0,0 s</span>
                                 <button id="btn_fps" class="sec" style="padding: 2px 10px; font-size: 12px;">2 Hz</button>
                             </div>
                         </div>
@@ -940,12 +940,12 @@
     socket.onmessage = (event) => {
         const donnees = JSON.parse(event.data);
 
-        // Mise à jour de la vidéo si allumée
+        // Maj de la vidéo si allumée
         if (cameraActive && donnees.image_cam && fluxCam) {
             fluxCam.src = donnees.image_cam;
         }
 
-        // Mise à jour des valeurs texte
+        // Maj des valeurs texte
         const eBat = document.getElementById('val_batterie');
         if (eBat) eBat.innerText = "12,1 V · " + donnees.batterie + " %";
 
@@ -962,7 +962,7 @@
     socket.onerror = (err) => {
         console.error("Erreur de connexion WebSocket :", err);
     };
-    //Réglages cam (résolution et fréquence)
+    //Réglages cam
     const resolutions = [[160, 120], [320, 240], [640, 480]];
     let idxRes = 1; // Par défaut : 320x240
 
