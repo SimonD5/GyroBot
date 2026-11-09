@@ -1,0 +1,169 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>GyroBot, Interface de contrôle</title>
+
+    <!-- page css - style -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    
+</head>
+
+<body>
+
+    <!-- En-tête -->
+    <header>
+        <div class="logo">
+            <h1>GyroBot</h1>
+            <p>Robot autonome et cartographie</p>
+        </div>
+
+        <div class="connexion">
+            <span id="etat-connexion">● Déconnecté</span>
+        </div>
+    </header>
+
+
+    <!-- Navigation principale -->
+    <nav>
+        <button class="onglet actif" data-page="accueil">Accueil</button>
+        <button class="onglet" data-page="mapping">Cartographie</button>
+        <button class="onglet" data-page="controle">Contrôle</button>
+        <button class="onglet" data-page="donnees">Données</button>
+    </nav>
+
+
+            <!-- contenu principal -->
+
+    <main>
+
+        <!-- Page d'accueil -->
+        <section id="accueil" class="page">
+            <h2>Tableau de bord</h2>
+            <p>Bienvenue sur l'interface du GyroBot. <p>Prêt à explorer ? Prenez les commandes du GyroBot et laissez-le vous faire découvrir son environnement.</p></p>
+
+            <div class="grille-informations">
+
+                <article class="carte">
+                    <h3>État du robot</h3>
+                    <p id="etat-robot">En attente XX CHNAGER</p>
+                </article>
+
+                <article class="carte">
+                    <h3>LiDAR</h3>
+                    <p id="etat-lidar">Non connecté</p>
+                </article>
+
+                <article class="carte">
+                    <h3>Distance minimale</h3>
+                    <p id="distance-minimale">-- m</p>
+                </article>
+
+                <article class="carte">
+                    <h3>Batterie</h3>
+                    <p id="niveau-batterie">-- %</p>
+                </article>
+
+            </div>
+        </section>
+
+
+        <!-- Page de cartographie -->
+        <section id="mapping" class="page" hidden>
+            <h2>Cartographie LiDAR</h2>
+            <div class="carte">
+                <h3>Carte de l'environnement</h3>
+                <!-- Zone affichage de la carte -->
+                <div id="zone-carte">
+                    <p>La carte apparaîtra ici.</p>
+                </div>
+                <p id="etat-mapping">Mapping arrêté</p>
+                <div class="commandes">
+                    <button id="demarrer-mapping">
+                        Démarrer le mapping
+                    </button>
+
+                    <button id="arreter-mapping">
+                        Arrêter le mapping
+                    </button>
+                </div>
+            </div>
+
+            <div class="carte">
+                <h3>Mesures du LiDAR</h3>
+                <p>Distance devant : <span id="distance-devant">-- m</span></p>
+                <p>Nombre de mesures : <span id="nombre-mesures">0</span></p>
+            </div>
+        </section>
+
+
+        <!-- Page en cas de contrôle manuel depuis l'interface -->
+        <section id="controle" class="page" hidden>
+            <h2>Contrôle du robot</h2>
+
+            <div class="carte">
+                <h3>Déplacement manuel</h3>
+
+                <div class="commandes-directionnelles">
+                    <button id="avancer">▲</button>
+
+                    <div>
+                        <button id="gauche">◀</button>
+                        <button id="arreter">■</button>
+                        <button id="droite">▶</button>
+                    </div>
+
+                    <button id="reculer">▼</button>
+                </div>
+
+                <p>
+                    Les commandes seront activées après la connexion
+                    au système de contrôle du robot.
+                </p>
+            </div>
+        </section>
+
+
+        <!-- Page données -->
+        <section id="donnees" class="page" hidden>
+            <h2>Données, tirées du Lidar</h2>
+
+            <div class="carte">
+                <h3>Informations techniques</h3>
+
+                <p>Connexion réseau :
+                    <span id="connexion reseau">--</span>
+                </p>
+
+                <p>État du programme :
+                    <span id="etat-programme">--</span>
+                </p>
+
+                <p>Dernière mise à jour :
+                    <span id="derniere-maj">--</span>
+                </p>
+
+                <button id="exporter-donnees">
+                    Exporter les données
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+
+    <!-- pied de page -->
+    <footer>
+        <p>GyroBot | Interface de supervision</p>
+    </footer>
+
+
+    <!-- Code Js -->
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+
+</body>
+</html>

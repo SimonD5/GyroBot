@@ -1,0 +1,70 @@
+/* fait dans le app.js finalement
+ Zone de cartographie LiDAR 
+
+#zone-carte {
+    width: 100%;
+    max-width: 3000px;
+    margin: 0 auto;
+}
+
+ Canvas de cartographie 
+
+#canvas-lidar {
+    width: 100%;
+    display: block;
+}*/
+
+
+
+/* style général */
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #e9edf2;
+    margin: 0;
+    padding: 20px;
+    color: #333;
+}
+
+/* Titre */
+h1 {
+    text-align: center;
+    color: #1e3a5f;
+}
+
+/* Sections */
+section {
+    background-color: #ffffff;
+    padding: 15px;
+    margin: 15px 0;
+    border-radius: 8px;
+    border: 1px solid #d5dce5;
+}
+
+/* Titres des sections */
+h2 {
+    color: #315b89;
+    margin-top: 0;
+}
+
+/* Les boutons */
+button {
+    background-color: #315b89;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+/* Changement de couleur au survol */
+button:hover {
+    background-color: #1e3a5f;
+}
+
+/* informations supp */
+p {
+    font-size: 15px;
+    color: #444;
+}
+
