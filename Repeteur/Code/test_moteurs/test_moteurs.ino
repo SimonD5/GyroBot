@@ -1,7 +1,7 @@
 // Test des moteurs - ESP32-C6 + TB6612FNG
 // Moteurs 6V 300 rpm, lipo 7,2V -> PWM limité à 200/255
 
-// ---- Broches driver ----
+// pins driver
 #define PWMA 11
 #define AIN1 7
 #define AIN2 10
@@ -12,14 +12,14 @@
 
 #define STBY 22
 
-// ---- Réglages PWM ----
-const int PWM_FREQ = 20000;  // 20 kHz (silencieux)
-const int PWM_RES  = 8;      // 8 bits -> 0..255
-const int PWM_MAX  = 200;    // limite à ne pas dépasser
+// reglages pwm
+const int PWM_FREQ = 20000;
+const int PWM_RES  = 8;
+const int PWM_MAX  = 200;
 
 // vitesse : -200 (arrière) ... 0 (stop) ... +200 (avant)
 void moteurA(int vitesse) {
-  vitesse = constrain(vitesse, -PWM_MAX, PWM_MAX); //limite de la vitesse 
+  vitesse = constrain(vitesse, -PWM_MAX, PWM_MAX); 
   if (vitesse > 0) {
     digitalWrite(AIN1, HIGH);
     digitalWrite(AIN2, LOW);
@@ -34,7 +34,7 @@ void moteurA(int vitesse) {
 }
 
 void moteurB(int vitesse) {
-  vitesse = constrain(vitesse, -PWM_MAX, PWM_MAX);  //limite de la vitesse
+  vitesse = constrain(vitesse, -PWM_MAX, PWM_MAX);
   if (vitesse > 0) {
     digitalWrite(BIN1, LOW);
     digitalWrite(BIN2, HIGH);
@@ -62,12 +62,12 @@ void setup() {
   pinMode(BIN2, OUTPUT);
   pinMode(STBY, OUTPUT);
 
-  // Core ESP32 Arduino 3.x : ledcAttach(pin, freq, résolution)
+  // init pwm
   ledcAttach(PWMA, PWM_FREQ, PWM_RES);
   ledcAttach(PWMB, PWM_FREQ, PWM_RES);
 
   stopTout();
-  digitalWrite(STBY, HIGH);  // active le driver
+  digitalWrite(STBY, HIGH);
 
   Serial.println("Test moteurs : demarrage dans 3 s...");
   delay(3000);

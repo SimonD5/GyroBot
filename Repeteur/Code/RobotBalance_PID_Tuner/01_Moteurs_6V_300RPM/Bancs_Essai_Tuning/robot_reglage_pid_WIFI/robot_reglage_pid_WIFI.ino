@@ -1,56 +1,15 @@
-// ============================================================
-// RobotBalance - réglage PID par WiFi "hors boucle"
-// ESP32-C6 + MPU6050 GY-521 + TB6612FNG
-//
-// PRINCIPE
-//   Le WiFi n'est JAMAIS actif pendant que le robot s'équilibre :
-//   la boucle PID tourne à 200 Hz sans aucune perturbation radio.
-//
-//   1. COMMS  : WiFi allumé (le robot est tombé / vient de démarrer).
-//               Le PC se connecte, reçoit l'essai précédent, règle les
-//               gains, puis envoie ARMER.
-//   2. ARMÉ   : WiFi COUPÉ. Le robot attend d'être redressé
-//               (|erreur| < ANGLE_REPRISE). Timeout 20 s -> retour COMMS.
-//   3. ACTIF  : le PID tourne, la télémétrie est stockée en RAM.
-//               Fin = chute, ou tampon plein (durée max), ou erreur IMU.
-//   4. retour à COMMS : WiFi rallumé, l'essai est envoyé au PC.
-//
-// RÉSEAU
-//   Le robot crée son propre point d'accès (SoftAP) :
-//     SSID : RobotPID     mot de passe : robot1234
-//     IP du robot : 192.168.4.1     port TCP : 3333
-//
-// COMMANDES (une par ligne, via TCP, uniquement en état COMMS)
-//   p15  i0  d1  s7.5  m20   -> Kp, Ki, Kd, consigne, PWM min
-//   a1                       -> armer (coupe le WiFi, attend le robot droit)
-//   a0                       -> désarmer (déjà le cas en COMMS)
-//   z                        -> recalibrer le gyro (robot IMMOBILE)
-//   g                        -> inverser le sens du gyro
-//   r                        -> gains de départ
-//   v40                      -> test roues PWM 40 pendant 0,8 s
-//   q                        -> arrêt moteurs
-//   ?                        -> afficher les paramètres
-//
-// MESSAGES ROBOT -> PC
-//   INFO,texte
-//   PARAM,Kp=..,Ki=..,Kd=..,consigne=..,pwmMin=..,gyroSign=..,armed=..,pending=..,cap=..
-//   ARMING
-//   TRIAL,num,nbEchantillons,Kp,Ki,Kd,consigne,pwmMin,raison
-//   D,t_ms,angle*100,acc*100,gyro*10,rateF*10,pid*10,pwm,dt_us
-//   END,num
-//   raison = FALL (chute) | MAXTIME (tampon plein) | IMU (erreur capteur)
-// ============================================================
+// Reglage PID wifi boucle simple
+// RobotPID / robot1234 sur port 3333
 
 #include <Wire.h>
 #include <WiFi.h>
 
-// ---------------- Réseau ----------------
+// com sans fil
 const char*    AP_SSID    = "RobotPID";
-const char*    AP_PASS    = "robot1234";   // 8 caractères minimum
+const char*    AP_PASS    = "robot1234";
 const uint8_t  AP_CHANNEL = 1;
 const uint16_t TCP_PORT   = 3333;
 
-// ---------------- Broches ----------------
 #define SDA_PIN 2
 #define SCL_PIN 3
 
@@ -62,63 +21,59 @@ const uint16_t TCP_PORT   = 3333;
 #define BIN2 20
 #define STBY 22
 
-// ---------------- Réglages matériels ----------------
 const int PWM_FREQ = 20000;
 const int PWM_RES  = 8;
 const int PWM_MAX  = 200;
 
-// Moteur B câblé à l'envers
+// moteur b câblé à l'envers
 const int SIGN_MOTEUR_A = 1;
 const int SIGN_MOTEUR_B = -1;
 
-// ---------------- PID ----------------
 float Kp = 14.5;
 float Ki = 1.0;
 float Kd = 0.25;
 float consigne = 3.1;
 int   pwmMin = 11;
 
-// ---------------- Sécurité ----------------
+// securite
 const float ANGLE_CHUTE   = 18.0;
-const float ANGLE_REPRISE = 2.0;  // Démarre l'essai uniquement si très proche de la consigne (|angle - consigne| < 2.0°)
+const float ANGLE_REPRISE = 2.0;
 const float I_MAX         = 80.0;
 const float ZONE_RAMPE    = 30.0;
 
-// Armé mais jamais redressé : retour en COMMS après ce délai
+// armé mais jamais redressé : retour en comms après ce délai
 const uint32_t ARME_TIMEOUT_MS = 20000;
 
-// Filtre gyro pour le D
+// filtre gyro pour le d
 const float ALPHA_D = 0.4;
 
-// Filtre complémentaire
+// filtre complémentaire
 const float ALPHA = 0.98;
 
-// 200 Hz = 5 ms
+// 200 hz = 5 ms
 const uint32_t PERIODE_US = 5000;
 
-// ---------------- Tampon d'enregistrement ----------------
-// 1 échantillon par tour de boucle (200 Hz).
-// 6000 échantillons = 30 s d'essai. La taille réelle est réduite
-// automatiquement si la RAM libre est insuffisante.
+// 1 échantillon par tour de boucle (200 hz).
+// automatiquement si la ram libre est insuffisante.
 const uint32_t MAX_ECHANTILLONS = 6000;
-const size_t   RESERVE_WIFI     = 90000;  // RAM laissée libre pour la pile WiFi
+const size_t   RESERVE_WIFI     = 90000;
 
 struct Echantillon {
   uint32_t t_ms;
-  int16_t  angle;   // 0.01 °
-  int16_t  acc;     // 0.01 °
-  int16_t  gyro;    // 0.1 °/s
-  int16_t  rateF;   // 0.1 °/s
-  int16_t  pid;     // 0.1
-  int16_t  pwm;     // commande réellement appliquée aux moteurs
-  uint16_t dt_us;   // durée réelle depuis le tour précédent
+  int16_t  angle;
+  int16_t  acc;
+  int16_t  gyro;
+  int16_t  rateF;
+  int16_t  pid;
+  int16_t  pwm;
+  uint16_t dt_us;
 };
 
 Echantillon* tampon = nullptr;
 uint32_t capacite = 0;
 uint32_t nEch = 0;
 
-// ---------------- MPU6050 ----------------
+// mpu6050
 const uint8_t MPU_ADDR = 0x68;
 float gyroBias = 0;
 float gyroSign = -1.0;
@@ -130,28 +85,27 @@ float rate = 0;
 float integrale = 0;
 float sortie = 0;
 
-// ---------------- Machine d'états ----------------
 enum Etat : uint8_t { ETAT_COMMS, ETAT_ARME, ETAT_ACTIF };
 Etat etat = ETAT_COMMS;
 
-uint32_t tPrec = 0;      // échéance planifiée (période fixe)
-uint32_t tDernier = 0;   // instant réel du dernier tour
+uint32_t tPrec = 0;
+uint32_t tDernier = 0;
 uint32_t tArme = 0;
 uint32_t tDebutActif = 0;
 
-// Essai en cours / dernier essai
+// essai en cours / dernier essai
 uint32_t essaiNum = 0;
-bool trialPret = false;            // essai terminé, pas encore transmis
+bool trialPret = false;
 const char* trialRaison = "";
 float essaiKp = 0, essaiKi = 0, essaiKd = 0, essaiConsigne = 0;
 int essaiPwmMin = 0;
 
-const char* infoConnexion = "";    // message envoyé à la prochaine connexion
+const char* infoConnexion = "";
 
 int testPwm = 0;
 uint32_t testFin = 0;
 
-// ---------------- WiFi / TCP ----------------
+// com sans fil
 WiFiServer server(TCP_PORT);
 WiFiClient client;
 bool wifiActif = false;
@@ -159,14 +113,14 @@ bool wifiActif = false;
 char cmdBuf[64];
 uint8_t cmdPos = 0;
 
-// Déclarations anticipées
+// déclarations anticipées
 void commandeMoteurs(int v);
 void afficheParametres();
 void calibrationGyro();
 void wifiOn();
 void wifiOff();
 
-// ---------------- MPU6050 ----------------
+// mpu6050
 void mpuEcrire(uint8_t reg, uint8_t val) {
   Wire.beginTransmission(MPU_ADDR);
   Wire.write(reg);
@@ -189,7 +143,7 @@ bool mpuLire(float &accAngle, float &gyroRate) {
   int16_t az = (Wire.read() << 8) | Wire.read();
 
   Wire.read();
-  Wire.read(); // température ignorée
+  Wire.read();
 
   int16_t gx = (Wire.read() << 8) | Wire.read();
   int16_t gy = (Wire.read() << 8) | Wire.read();
@@ -199,23 +153,22 @@ bool mpuLire(float &accAngle, float &gyroRate) {
   (void)gy;
   (void)gz;
 
-  // IMU montée "debout"
+// imu montée "debout"
   accAngle = atan2((float)az, (float)ay) * RAD_TO_DEG;
 
-  // ±500 °/s -> 65.5 LSB/(°/s)
+// ±500 °/s -> 65.5 lsb/(°/s)
   gyroRate = gyroSign * gx / 65.5;
 
   return true;
 }
 
 void mpuInit() {
-  mpuEcrire(0x6B, 0x00);  // sortie de veille
-  mpuEcrire(0x1A, 0x03);  // DLPF ~44 Hz
-  mpuEcrire(0x1B, 0x08);  // gyro ±500 °/s
-  mpuEcrire(0x1C, 0x00);  // accéléro ±2 g
+  mpuEcrire(0x6B, 0x00);
+  mpuEcrire(0x1A, 0x03);
+  mpuEcrire(0x1B, 0x08);
+  mpuEcrire(0x1C, 0x00);
 }
 
-// Envoie un message INFO sur l'USB (debug) et au PC s'il est connecté.
 void info(const char* texte) {
   Serial.print("INFO,");
   Serial.println(texte);
@@ -249,7 +202,7 @@ void calibrationGyro() {
   info(msg);
 }
 
-// ---------------- Moteurs ----------------
+// moteurs
 void moteur(int pwmPin, int in1, int in2, int vitesse) {
   vitesse = constrain(vitesse, -PWM_MAX, PWM_MAX);
 
@@ -274,7 +227,7 @@ void commandeMoteurs(int v) {
   moteur(PWMB, BIN1, BIN2, SIGN_MOTEUR_B * v);
 }
 
-// ---------------- WiFi ----------------
+// com sans fil
 void wifiOn() {
   if (wifiActif)
     return;
@@ -297,7 +250,6 @@ void wifiOff() {
   wifiActif = false;
 }
 
-// ---------------- Enregistrement ----------------
 static inline int16_t q16(float v, float echelle) {
   float x = v * echelle;
   if (x > 32767.0f)  x = 32767.0f;
@@ -320,15 +272,13 @@ static inline void enregistrer(float pwmApplique, float pidVal, uint32_t dus) {
   e.dt_us = (dus > 65535UL) ? 65535 : (uint16_t)dus;
 }
 
-// ---------------- Changements d'état ----------------
 void armerEtCouperWifi() {
   integrale = 0;
   nEch = 0;
   testFin = 0;
   commandeMoteurs(0);
 
-  // Laisse le temps à l'accusé de partir et à la connexion de se fermer
-  // proprement avant de couper la radio.
+// proprement avant de couper la radio.
   client.println("ARMING");
   delay(100);
   client.stop();
@@ -348,7 +298,7 @@ void demarrerEssai() {
   nEch = 0;
   integrale = 0;
 
-  // Gains figés pour toute la durée de l'essai
+// gains figés pour toute la durée de l'essai
   essaiKp = Kp;
   essaiKi = Ki;
   essaiKd = Kd;
@@ -359,7 +309,7 @@ void demarrerEssai() {
   etat = ETAT_ACTIF;
 }
 
-// Fin d'essai : moteurs coupés, WiFi rallumé, essai prêt à être envoyé.
+// wifi
 void finirEssai(const char* raison) {
   commandeMoteurs(0);
   sortie = 0;
@@ -369,13 +319,13 @@ void finirEssai(const char* raison) {
   trialPret = true;
   trialRaison = raison;
 
-  wifiOn();  // bloquant quelques centaines de ms : sans importance, moteurs coupés
+  wifiOn();
 
   tPrec = micros();
   tDernier = tPrec;
 }
 
-// Armé mais jamais redressé : on rend la main au PC.
+// armé mais jamais redressé : on rend la main au pc.
 void retourComms(const char* message) {
   commandeMoteurs(0);
   integrale = 0;
@@ -388,7 +338,6 @@ void retourComms(const char* message) {
   tDernier = tPrec;
 }
 
-// ---------------- Paramètres ----------------
 void appliquerParam(char c, float v) {
   switch (c) {
     case 'p':
@@ -482,7 +431,6 @@ void traiterCommande(const char* ligne) {
   }
 }
 
-// ---------------- Envoi d'un essai ----------------
 bool envoyerBloc(const char* data, size_t len) {
   if (!client.connected())
     return false;
@@ -523,7 +471,6 @@ void envoyerEssai() {
 
     pos += k;
 
-    // Une ligne fait moins de 80 octets : on vide avant de déborder.
     if (pos > sizeof(out) - 80) {
       if (!envoyerBloc(out, pos))
         return;
@@ -541,7 +488,6 @@ void envoyerEssai() {
   trialPret = false;
 }
 
-// ---------------- Gestion du client TCP ----------------
 void clientConnecte() {
   client.println("INFO,READY");
 
@@ -557,7 +503,7 @@ void clientConnecte() {
     envoyerEssai();
 }
 
-// Lecture non bloquante des commandes du PC.
+// lecture non bloquante des commandes du pc.
 void lireClient() {
   while (client.connected() && client.available() > 0) {
     char c = (char)client.read();
@@ -571,7 +517,7 @@ void lireClient() {
       if (cmdPos > 0) {
         traiterCommande(cmdBuf);
 
-        // Un armement coupe le WiFi : on s'arrête là.
+// armement
         if (!wifiActif) {
           cmdPos = 0;
           return;
@@ -586,7 +532,7 @@ void lireClient() {
       cmdBuf[cmdPos++] = c;
     }
     else {
-      // Ligne trop longue : on abandonne la ligne.
+// ligne trop longue : on abandonne la ligne.
       cmdPos = 0;
     }
   }
@@ -609,11 +555,10 @@ void gererWifi() {
   lireClient();
 }
 
-// ---------------- Setup ----------------
 void setup() {
-  Serial.begin(115200);  // debug uniquement
+  Serial.begin(115200);
 
-  // Tampon d'enregistrement : à allouer AVANT de démarrer le WiFi.
+// wifi
   size_t libre = ESP.getFreeHeap();
   size_t dispo = (libre > RESERVE_WIFI) ? (libre - RESERVE_WIFI) : 0;
   size_t maxEch = dispo / sizeof(Echantillon);
@@ -642,7 +587,7 @@ void setup() {
   mpuInit();
   delay(100);
 
-  // Le robot doit être immobile ici (le WiFi n'est pas encore démarré).
+// wifi
   calibrationGyro();
 
   float a, g;
@@ -662,9 +607,8 @@ void setup() {
   info("READY");
 }
 
-// ---------------- Boucle principale ----------------
 void loop() {
-  // WiFi : uniquement en état COMMS (jamais pendant l'essai).
+// wifi
   if (wifiActif)
     gererWifi();
 
@@ -673,18 +617,18 @@ void loop() {
   if ((uint32_t)(now - tPrec) < PERIODE_US)
     return;
 
-  // Durée réelle depuis le tour précédent.
+// durée réelle depuis le tour précédent.
   uint32_t dus = now - tDernier;
   tDernier = now;
 
-  // Planification à période fixe pour limiter la dérive.
-  // Si la boucle a pris trop de retard, on recale.
+// planification à période fixe pour limiter la dérive.
+// si la boucle a pris trop de retard, on recale.
   tPrec += PERIODE_US;
 
   if ((uint32_t)(now - tPrec) > PERIODE_US * 4UL)
     tPrec = now;
 
-  // Protège l'intégration contre un trou de plusieurs ms (envoi WiFi, calibration...).
+// wifi
   float dt = ((dus > 20000UL) ? 20000UL : dus) / 1000000.0f;
 
   float accAngle, gyroRate;
@@ -703,10 +647,10 @@ void loop() {
   rate = gyroRate - gyroBias;
   angleAcc = accAngle;
 
-  // Filtre gyro uniquement pour le terme D
+// filtre gyro uniquement pour le terme d
   rateF += ALPHA_D * (rate - rateF);
 
-  // Filtre complémentaire
+// filtre complémentaire
   angle = ALPHA * (angle + rate * dt)
         + (1.0 - ALPHA) * accAngle;
 
@@ -715,7 +659,7 @@ void loop() {
   switch (etat) {
 
     case ETAT_COMMS:
-      // Seul le test roues peut faire tourner les moteurs ici.
+// seul le test roues peut faire tourner les moteurs ici.
       if ((int32_t)(testFin - millis()) > 0)
         commandeMoteurs(testPwm);
       else
@@ -732,26 +676,24 @@ void loop() {
       break;
 
     case ETAT_ACTIF: {
-      // Chute : on enregistre le dernier point puis on rend la main au PC.
       if (fabs(angle) > ANGLE_CHUTE) {
         enregistrer(0, 0, dus);
         finirEssai("FALL");
         break;
       }
 
-      // I
+// i
       integrale += Ki * erreur * dt;
       integrale = constrain(integrale, -I_MAX, I_MAX);
 
-      // IMPORTANT :
-      // le D s'oppose à la vitesse de chute.
-      // Avec erreur = angle - consigne et gyro positif quand
-      // l'angle augmente, le terme D doit donc être -Kd * rateF. FAUX ??
+// important :
+// le d s'oppose à la vitesse de chute.
+// avec erreur = angle - consigne et gyro positif quand
       sortie = Kp * erreur + integrale + Kd * rateF;
 
       sortie = constrain(sortie, -PWM_MAX, PWM_MAX);
 
-      // Compensation progressive de la zone morte moteur.
+// compensation progressive de la zone morte moteur.
       float absS = fabs(sortie);
       float offset = pwmMin * min(absS / ZONE_RAMPE, 1.0f);
 
@@ -768,7 +710,6 @@ void loop() {
 
       enregistrer(cmd, sortie, dus);
 
-      // Tampon plein : fin d'essai propre pour récupérer les données.
       if (nEch >= capacite)
         finirEssai("MAXTIME");
       break;

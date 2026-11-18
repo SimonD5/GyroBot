@@ -1,44 +1,15 @@
-// ============================================================
-// RobotBalance - Cascade 2 Boucles (Angle + Anti-dérive sans encodeur)
-// ESP32-C6 + MPU6050 GY-521 + TB6612FNG
-//
-// PRINCIPE DE LA CASCADE 2 BOUCLES :
-//   1. Boucle interne (200 Hz rapide) : PID d'angle (Kp, Ki, Kd)
-//      Maintient le robot debout autour d'une consigne dynamique.
-//   2. Boucle externe (anti-dérive / estimation vitesse par PWM moyen) :
-//      Le PWM moyen (filtré passe-bas) indique si le robot avance ou recule.
-//      - Si le robot dérive en avant (PWM moyen > 0) -> la boucle externe
-//        incline légèrement la consigne en arrière pour freiner la translation.
-//      - Si le robot dérive en arrière -> incline la consigne en avant.
-//      - L'intégrale de position recentre le robot et trouve automatiquement
-//        le centre de gravité exact même si la batterie bouge !
-//
-// RÉSEAU : SoftAP "RobotPID", mdp "robot1234", IP 192.168.4.1:3333
-//
-// COMMANDES :
-//   p15.0  i1.0  d0.3  s2.5  m11  -> Kp, Ki, Kd, consigne de base, pwmMin
-//   k0.02                         -> Kp2 (gain vitesse estimée)
-//   j0.005                        -> Ki2 (gain position estimée / auto-centre)
-//   a1                            -> armer (attend robot droit, coupe WiFi)
-//   a0                            -> désarmer
-//   z                             -> recalibrer le gyro (robot IMMOBILE)
-//   g                             -> inverser sens gyro
-//   r                             -> valeurs par défaut
-//   v40                           -> test roues PWM 40 pendant 0.8 s
-//   q                             -> arrêt moteurs
-//   ?                             -> afficher paramètres
-// ============================================================
+// Banc wifi reglage PID cascade (double boucle angle + vitesse)
+// RobotPID / robot1234 sur port 3333
 
 #include <Wire.h>
 #include <WiFi.h>
 
-// ---------------- Réseau ----------------
+// com sans fil
 const char*    AP_SSID    = "RobotPID";
 const char*    AP_PASS    = "robot1234";
 const uint8_t  AP_CHANNEL = 1;
 const uint16_t TCP_PORT   = 3333;
 
-// ---------------- Broches ----------------
 #define SDA_PIN 2
 #define SCL_PIN 3
 
@@ -50,7 +21,6 @@ const uint16_t TCP_PORT   = 3333;
 #define BIN2 20
 #define STBY 22
 
-// ---------------- Réglages matériels ----------------
 const int PWM_FREQ = 20000;
 const int PWM_RES  = 8;
 const int PWM_MAX  = 200;
@@ -58,58 +28,57 @@ const int PWM_MAX  = 200;
 const int SIGN_MOTEUR_A = 1;
 const int SIGN_MOTEUR_B = -1;
 
-// ---------------- PID Boucle 1 (Angle) ----------------
+// boucle pid angle
 float Kp = 15.0;
 float Ki = 1.0;
 float Kd = 0.30;
 float consigne = 2.5;
 int   pwmMin = 11;
 
-// ---------------- Boucle 2 (Cascade Anti-Dérive) ----------------
-float Kp2 = 0.0;     // Gain proportionnel vitesse estimée (commencer à 0, puis tester 0.01 à 0.04)
-float Ki2 = 0.0;     // Gain intégral position estimée (commencer à 0, puis tester 0.001 à 0.005)
-const float ALPHA_V = 0.03;          // Filtre passe-bas vitesse estimée (~200 ms)
-const float ANGLE_CORR_MAX = 3.0;    // Butée de sécurité : la consigne ne peut pas dévier de plus de +/- 3°
-const float POS_EST_MAX = 5000.0;    // Anti-windup position estimée
+// boucle vitesse cascade
+float Kp2 = 0.0;
+float Ki2 = 0.0;
+const float ALPHA_V = 0.03;
+const float ANGLE_CORR_MAX = 3.0;
+const float POS_EST_MAX = 5000.0;
 
 float vitesseEstimee = 0;
 float positionEstimee = 0;
 float correctionAngle = 0;
 float consigneActive = 2.5;
 
-// ---------------- Sécurité ----------------
+// securite
 const float ANGLE_CHUTE   = 18.0;
-const float ANGLE_REPRISE = 2.0;    // Démarre uniquement si |angle - consigne| < 2.0°
+const float ANGLE_REPRISE = 2.0;
 const float I_MAX         = 80.0;
 const float ZONE_RAMPE    = 30.0;
 
 const uint32_t ARME_TIMEOUT_MS = 20000;
 const float ALPHA_D = 0.4;
 const float ALPHA = 0.98;
-const uint32_t PERIODE_US = 5000;   // 200 Hz
+const uint32_t PERIODE_US = 5000;
 
-// ---------------- Tampon d'enregistrement ----------------
 const uint32_t MAX_ECHANTILLONS = 6000;
 const size_t   RESERVE_WIFI     = 90000;
 
 struct Echantillon {
   uint32_t t_ms;
-  int16_t  angle;     // 0.01 °
-  int16_t  acc;       // 0.01 °
-  int16_t  gyro;      // 0.1 °/s
-  int16_t  rateF;     // 0.1 °/s
-  int16_t  pid;       // 0.1
-  int16_t  pwm;       // commande moteurs
-  int16_t  target;    // 0.01 ° consigne active dynamique
-  int16_t  spd;       // 0.1 vitesse estimée (PWM lissé)
-  uint16_t dt_us;     // durée boucle
+  int16_t  angle;
+  int16_t  acc;
+  int16_t  gyro;
+  int16_t  rateF;
+  int16_t  pid;
+  int16_t  pwm;
+  int16_t  target;
+  int16_t  spd;
+  uint16_t dt_us;
 };
 
 Echantillon* tampon = nullptr;
 uint32_t capacite = 0;
 uint32_t nEch = 0;
 
-// ---------------- MPU6050 ----------------
+// mpu6050
 const uint8_t MPU_ADDR = 0x68;
 float gyroBias = 0;
 float gyroSign = -1.0;
@@ -121,7 +90,6 @@ float rate = 0;
 float integrale = 0;
 float sortie = 0;
 
-// ---------------- Machine d'états ----------------
 enum Etat : uint8_t { ETAT_COMMS, ETAT_ARME, ETAT_ACTIF };
 Etat etat = ETAT_COMMS;
 
@@ -142,7 +110,7 @@ const char* infoConnexion = "";
 int testPwm = 0;
 uint32_t testFin = 0;
 
-// ---------------- WiFi / TCP ----------------
+// com sans fil
 WiFiServer server(TCP_PORT);
 WiFiClient client;
 bool wifiActif = false;
@@ -396,11 +364,11 @@ void appliquerParam(char c, float v) {
       pwmMin = max((int)v, 0);
       break;
 
-    case 'k': // Kp2 : gain vitesse boucle 2
+    case 'k':
       Kp2 = max(v, 0.0f);
       break;
 
-    case 'j': // Ki2 : gain position/centrage boucle 2
+    case 'j':
       Ki2 = max(v, 0.0f);
       break;
 
@@ -679,7 +647,7 @@ void loop() {
       vitesseEstimee = 0;
       positionEstimee = 0;
 
-      // Déclenchement propre lorsque proche de la consigne
+// déclenchement propre lorsque proche de la consigne
       if (fabs(angle) < ANGLE_CHUTE && fabs(angle - consigne) < ANGLE_REPRISE)
         demarrerEssai();
       else if (millis() - tArme > ARME_TIMEOUT_MS)
@@ -693,20 +661,17 @@ void loop() {
         break;
       }
 
-      // --- BOUCLE EXTERNE : Anti-dérive / Vitesse estimée ---
-      // Lissage passe-bas de la commande pour extraire la vitesse de translation
+// boucle vitesse cascade
       vitesseEstimee += ALPHA_V * (sortie - vitesseEstimee);
       positionEstimee += vitesseEstimee * dt;
       positionEstimee = constrain(positionEstimee, -POS_EST_MAX, POS_EST_MAX);
 
-      // Si le robot avance (vitesseEstimee > 0), on soustrait une correction
-      // pour que consigneActive penche en arrière et freine le robot.
       correctionAngle = constrain(Kp2 * vitesseEstimee + Ki2 * positionEstimee, -ANGLE_CORR_MAX, ANGLE_CORR_MAX);
       consigneActive = consigne - correctionAngle;
 
       erreur = angle - consigneActive;
 
-      // --- BOUCLE INTERNE : Angle PID ---
+// boucle pid angle
       integrale += Ki * erreur * dt;
       integrale = constrain(integrale, -I_MAX, I_MAX);
 

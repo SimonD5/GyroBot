@@ -1,35 +1,15 @@
-// ============================================================
-// BANC DE REGLAGE Wi-Fi POUR MOTEURS 6V 500 RPM
-// Permet de regler en direct Kp, Ki, Kd, Consigne, pwmMin, Kp2 et Deadband
-// via l'interface Python (lancer_pid_tuner_v3.bat).
-// ============================================================
-// ============================================================
-// RobotBalance - Banc de Reglage Wi-Fi V3 [SPECIAL MOTEURS 6V 500 RPM]
-// ESP32-C6 + MPU6050 GY-521 + TB6612FNG
-//
-// NOUVEAUTÉS V3 :
-//   1. WiFi PERSISTANT : Le point d'accès SoftAP "RobotPID" reste allumé en continu.
-//      Le PC ne se déconnecte PLUS JAMAIS du réseau WiFi pendant l'essai.
-//      Aucune donnée n'est transmise pendant la régulation (zéro impact sur la boucle).
-//      Dès la fin de l'essai, les données arrivent instantanément au PC.
-//   2. ZONE MORTE ANTI-TREMBLEMENT : Si le PWM moyen est faible (|spd| <= 6),
-//      la boucle 2 ne touche pas à la consigne. Elle n'intervient que si le robot
-//      dérive réellement. Cela élimine le tremblement vers 10-15 secondes.
-//   3. DURÉE 45 SECONDES : Tampon de 9000 échantillons à 200 Hz.
-//
-// RÉSEAU : SoftAP "RobotPID", mdp "robot1234", IP 192.168.4.1:3333
-// ============================================================
+// Banc wifi v3 moteurs 500 RPM (zone morte)
+// RobotPID / robot1234 sur port 3333
 
 #include <Wire.h>
 #include <WiFi.h>
 
-// ---------------- Réseau ----------------
+// com sans fil
 const char*    AP_SSID    = "RobotPID";
 const char*    AP_PASS    = "robot1234";
 const uint8_t  AP_CHANNEL = 1;
 const uint16_t TCP_PORT   = 3333;
 
-// ---------------- Broches ----------------
 #define SDA_PIN 2
 #define SCL_PIN 3
 
@@ -41,66 +21,64 @@ const uint16_t TCP_PORT   = 3333;
 #define BIN2 20
 #define STBY 22
 
-// ---------------- Réglages matériels ----------------
 const int PWM_FREQ = 20000;
 const int PWM_RES  = 8;
 const int PWM_MAX  = 200;
 
-// Sens des moteurs inversé pour les 500 RPM
+// sens des moteurs inversé pour les 500 rpm
 const int SIGN_MOTEUR_A = -1;
 const int SIGN_MOTEUR_B = 1;
 
-// ---------------- PID Boucle 1 (Angle) ----------------
+// boucle pid angle
 float Kp = 15.0;
 float Ki = 1.0;
 float Kd = 0.30;
 float consigne = 2.5;
 int   pwmMin = 11;
 
-// ---------------- Boucle 2 (Cascade avec Zone Morte) ----------------
-float Kp2 = 0.05;    // Gain vitesse estimée
-float Ki2 = 0.00;    // Gardé à 0 pour éviter le retard de phase
-const float ALPHA_V = 0.03;          // Filtre passe-bas vitesse estimée (~200 ms)
-float V_DEADBAND = 2.0;              // Zone morte anti-tremblement (reglable via 'b')
-const float ANGLE_CORR_MAX = 3.0;    // Butée de sécurité : max +/- 3°
+// boucle vitesse cascade
+float Kp2 = 0.05;
+float Ki2 = 0.00;
+const float ALPHA_V = 0.03;
+float V_DEADBAND = 2.0;
+const float ANGLE_CORR_MAX = 3.0;
 
 float vitesseEstimee = 0;
 float correctionAngle = 0;
 float consigneActive = 2.5;
 
-// ---------------- Sécurité ----------------
+// securite
 const float ANGLE_CHUTE   = 18.0;
-const float ANGLE_REPRISE = 2.0;    // Démarre uniquement si |angle - consigne| < 2.0°
+const float ANGLE_REPRISE = 2.0;
 const float I_MAX         = 80.0;
 const float ZONE_RAMPE    = 30.0;
 
 const uint32_t ARME_TIMEOUT_MS = 25000;
 const float ALPHA_D = 0.4;
 const float ALPHA = 0.98;
-const uint32_t PERIODE_US = 5000;   // 200 Hz (5 ms)
+const uint32_t PERIODE_US = 5000;
 
-// ---------------- Tampon d'enregistrement (45 secondes) ----------------
-const uint32_t MAX_ECHANTILLONS = 9000;   // 45 s à 200 Hz
+const uint32_t MAX_ECHANTILLONS = 9000;
 const size_t   RESERVE_WIFI     = 80000;
 
 struct Echantillon {
   uint32_t t_ms;
-  int16_t  angle;     // 0.01 °
-  int16_t  acc;       // 0.01 °
-  int16_t  gyro;      // 0.1 °/s
-  int16_t  rateF;     // 0.1 °/s
-  int16_t  pid;       // 0.1
-  int16_t  pwm;       // commande moteurs
-  int16_t  target;    // 0.01 ° consigne active
-  int16_t  spd;       // 0.1 vitesse estimée
-  uint16_t dt_us;     // durée tour
+  int16_t  angle;
+  int16_t  acc;
+  int16_t  gyro;
+  int16_t  rateF;
+  int16_t  pid;
+  int16_t  pwm;
+  int16_t  target;
+  int16_t  spd;
+  uint16_t dt_us;
 };
 
 Echantillon* tampon = nullptr;
 uint32_t capacite = 0;
 uint32_t nEch = 0;
 
-// ---------------- MPU6050 ----------------
+// mpu6050
 const uint8_t MPU_ADDR = 0x68;
 float gyroBias = 0;
 float gyroSign = -1.0;
@@ -112,7 +90,6 @@ float rate = 0;
 float integrale = 0;
 float sortie = 0;
 
-// ---------------- Machine d'états ----------------
 enum Etat : uint8_t { ETAT_COMMS, ETAT_ARME, ETAT_ACTIF };
 Etat etat = ETAT_COMMS;
 
@@ -133,7 +110,7 @@ const char* infoConnexion = "";
 int testPwm = 0;
 uint32_t testFin = 0;
 
-// ---------------- WiFi / TCP ----------------
+// com sans fil
 WiFiServer server(TCP_PORT);
 WiFiClient client;
 bool wifiActif = false;
@@ -247,13 +224,13 @@ void commandeMoteurs(int v) {
   moteur(PWMB, BIN1, BIN2, SIGN_MOTEUR_B * v);
 }
 
-// Démarre le SoftAP (reste actif en permanence)
+// wifi
 void wifiOn() {
   if (wifiActif)
     return;
 
   WiFi.mode(WIFI_AP);
-  WiFi.softAP(AP_SSID, AP_PASS, AP_CHANNEL, 0, 4); // autorise jusqu'à 4 clients
+  WiFi.softAP(AP_SSID, AP_PASS, AP_CHANNEL, 0, 4);
   server.begin();
   wifiActif = true;
   cmdPos = 0;
@@ -283,7 +260,7 @@ static inline void enregistrer(float pwmApplique, float pidVal, uint32_t dus, fl
   e.dt_us  = (dus > 65535UL) ? 65535 : (uint16_t)dus;
 }
 
-// Arme sans couper le WiFi : le PC reste connecté !
+// armement
 void armerSansCouperWifi() {
   integrale = 0;
   vitesseEstimee = 0;
@@ -295,11 +272,11 @@ void armerSansCouperWifi() {
 
   if (client && client.connected()) {
     client.println("ARMING");
-    // Pas de flush() bloquant ici : le TCP stack envoie asap.
+// pas de flush() bloquant ici : le tcp stack envoie asap.
   }
 
-  // Le SoftAP reste actif, mais le mode devient ARME
-  // Aucune communication TCP n'aura lieu pendant l'essai.
+// le softap reste actif, mais le mode devient arme
+// aucune communication tcp n'aura lieu pendant l'essai.
   etat = ETAT_ARME;
   tArme = millis();
   tPrec = micros();
@@ -339,7 +316,6 @@ void finirEssai(const char* raison) {
   tPrec = micros();
   tDernier = tPrec;
 
-  // Si le client est resté connecté, on envoie immédiatement l'essai !
   if (client && client.connected()) {
     envoyerEssai();
   }
@@ -389,7 +365,7 @@ void appliquerParam(char c, float v) {
       break;
 
     case 'b':
-      V_DEADBAND = max(v, 0.0f);   // Deadband reglable depuis le PC
+      V_DEADBAND = max(v, 0.0f);
       break;
 
     case 'j':
@@ -423,7 +399,7 @@ void appliquerParam(char c, float v) {
 
     case 'a':
       if (v > 0.5f) {
-        // N'arme que si on est en COMMS (ignore si déjà armé / actif)
+// n'arme que si on est en comms (ignore si déjà armé / actif)
         if (etat == ETAT_COMMS) {
           if (trialPret) {
             info("Essai precedent non transmis : armement refuse");
@@ -432,7 +408,7 @@ void appliquerParam(char c, float v) {
           }
         }
       } else {
-        // Désarmement : toujours accepté
+// armement
         testFin = 0;
         commandeMoteurs(0);
         etat = ETAT_COMMS;
@@ -627,8 +603,8 @@ void setup() {
 }
 
 void loop() {
-  // WiFi géré en COMMS et ARME (pour garder le socket TCP vivant).
-  // Pendant ETAT_ACTIF (régulation active) : zéro appel réseau.
+// wifi
+// pendant etat_actif (régulation active) : zéro appel réseau.
   if (etat != ETAT_ACTIF)
     gererWifi();
 
@@ -661,7 +637,7 @@ void loop() {
   rateF += ALPHA_D * (rate - rateF);
   angle = ALPHA * (angle + rate * dt) + (1.0 - ALPHA) * accAngle;
 
-  // Diffusion de l'angle en direct quand le robot n'est pas en essai (10 Hz = 100 ms)
+// envoi angle direct
   static uint32_t tDernierAngleLive = 0;
   if (etat != ETAT_ACTIF && !trialPret && (millis() - tDernierAngleLive >= 100)) {
     tDernierAngleLive = millis();
@@ -685,7 +661,7 @@ void loop() {
       consigneActive = consigne;
       vitesseEstimee = 0;
 
-      // Déclenchement propre lorsque proche de la consigne
+// déclenchement propre lorsque proche de la consigne
       if (fabs(angle) < ANGLE_CHUTE && fabs(angle - consigne) < ANGLE_REPRISE)
         demarrerEssai();
       else if (millis() - tArme > ARME_TIMEOUT_MS)
@@ -699,10 +675,10 @@ void loop() {
         break;
       }
 
-      // --- BOUCLE EXTERNE : Vitesse estimée avec Zone Morte ---
+// boucle vitesse cascade
       vitesseEstimee += ALPHA_V * (sortie - vitesseEstimee);
 
-      // Zone morte anti-tremblement : si le PWM moyen est faible, pas de correction.
+// zone morte
       float vActive = 0.0f;
       if (fabs(vitesseEstimee) > V_DEADBAND) {
         if (vitesseEstimee > 0)
@@ -711,13 +687,13 @@ void loop() {
           vActive = vitesseEstimee + V_DEADBAND;
       }
 
-      // Correction proportionnelle douce uniquement hors zone morte
+// correction proportionnelle douce uniquement hors zone morte
       correctionAngle = constrain(Kp2 * vActive, -ANGLE_CORR_MAX, ANGLE_CORR_MAX);
       consigneActive = consigne - correctionAngle;
 
       erreur = angle - consigneActive;
 
-      // --- BOUCLE INTERNE : Angle PID ---
+// boucle pid angle
       integrale += Ki * erreur * dt;
       integrale = constrain(integrale, -I_MAX, I_MAX);
 

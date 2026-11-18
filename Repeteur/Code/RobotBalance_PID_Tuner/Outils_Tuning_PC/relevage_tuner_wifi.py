@@ -1,21 +1,5 @@
-"""
-RobotBalance - Banc d'Essais Relevage Automatique (Wi-Fi)
-=========================================================
-
-Interface graphique spécialisée pour tester, analyser et optimiser
-le redressement automatique du robot depuis +/-20 deg au sol jusqu'a
-l'equilibre stable maintenu pendant 10 secondes.
-
-PARAMETRES DU RELEVAGE :
-  - PWM Kick         : Puissance de l'impulsion (50 a 200, limite stricte a 200)
-  - Duree Kick       : Temps max d'impulsion motrice en ms (30 a 350 ms)
-  - Angle Capture    : Angle a partir duquel le kick s'arrete et le freinage s'active (3 a 12 deg)
-  - Kd Boost         : Facteur multiplicateur de Kd pendant le freinage (1.0x a 2.5x)
-  - Duree Equilibre  : Temps de maintien en equilibre vise (10s)
-
-RESEAU :
-  SSID: RobotPID   Mot de passe: robot1234   IP: 192.168.4.1:3333
-"""
+# Interface pour tester et regler le relevage automatique en wifi
+# RobotPID / robot1234 sur port 3333
 
 import json
 import math
@@ -34,7 +18,7 @@ from tkinter import ttk, messagebox
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-# ── Configuration Réseau ──────────────────────────────────────────────────────
+# reseau
 ROBOT_IP     = "192.168.4.1"
 ROBOT_PORT   = 3333
 TCP_TIMEOUT  = 5.0
@@ -43,7 +27,6 @@ RECV_TIMEOUT = 0.05
 MAX_POINTS_PLOT = 3500
 
 
-# ── Dataclass Essai Relevage ──────────────────────────────────────────────────
 @dataclass
 class RelevageTrial:
     number: int
@@ -71,7 +54,7 @@ class RelevageTrial:
     data: list
 
 
-# ── Analyseur Intelligent de Relevage ─────────────────────────────────────────
+# analyse
 class RelevageAnalyzer:
     @staticmethod
     def analyze(data, p_kick, t_kick, c_kick, kd_boost, setpoint, trial_no):
@@ -181,7 +164,7 @@ class RelevageAnalyzer:
         )
 
 
-# ── Client TCP Non-Bloquant ───────────────────────────────────────────────────
+# liaison serie / tcp
 class RelevageTCPClient:
     def __init__(self, msg_queue):
         self.queue = msg_queue
@@ -269,7 +252,7 @@ class RelevageTCPClient:
                     break
 
 
-# ── Fenêtre Principale GUI ────────────────────────────────────────────────────
+# interface
 class RelevageTunerGUI:
     def __init__(self, root):
         self.root = root
@@ -277,11 +260,9 @@ class RelevageTunerGUI:
         self.root.geometry("1400x900")
         self.root.minsize(1100, 750)
 
-        # File de messages réseau
         self.msg_queue = queue.Queue()
         self.client = RelevageTCPClient(self.msg_queue)
 
-        # Variables de relevage
         self.params = {
             "pKick": 180,
             "tKick": 350,
@@ -303,7 +284,6 @@ class RelevageTunerGUI:
         self.current_trial_info = {}
         self.is_armed = False
 
-        # Dossier de sauvegarde des sessions
         script_dir = os.path.dirname(os.path.abspath(__file__))
         self.session_dir = os.path.join(script_dir, "SessionTest")
         os.makedirs(self.session_dir, exist_ok=True)
@@ -315,7 +295,6 @@ class RelevageTunerGUI:
         self.root.after(50, self._process_network)
 
     def _build_ui(self):
-        # 1. Barre d'état supérieure
         top_bar = ttk.Frame(self.root, padding=6)
         top_bar.pack(fill="x")
 
@@ -328,7 +307,6 @@ class RelevageTunerGUI:
         self.armed_label = tk.Label(top_bar, text="DESARME", bg="#ddd", fg="#333", font=("Helvetica", 10, "bold"), width=12)
         self.armed_label.pack(side="right", padx=6)
 
-        # 2. Panneau de diagnostic et conseils
         advice_frame = ttk.LabelFrame(self.root, text="Diagnostic & Conseils de Réglage", padding=6)
         advice_frame.pack(fill="x", padx=8, pady=3)
 
@@ -343,7 +321,6 @@ class RelevageTunerGUI:
         )
         self.advice_desc.pack(anchor="w", pady=(2, 0))
 
-        # 3. Panneau des contrôles Relevage
         ctrl_frame = ttk.LabelFrame(self.root, text="Paramètres de Relevage Automatique (Priorité)", padding=8)
         ctrl_frame.pack(fill="x", padx=8, pady=3)
 
@@ -443,7 +420,6 @@ class RelevageTunerGUI:
         )
         self.btn_stop.pack(side="right", padx=4)
 
-        # 4. Onglets : Courbes, Historique, Log
         notebook = ttk.Notebook(self.root)
         notebook.pack(fill="both", expand=True, padx=8, pady=4)
 
@@ -521,7 +497,6 @@ class RelevageTunerGUI:
         self.log_text.pack(fill="both", expand=True, padx=4, pady=4)
 
     def _apply_all_params(self):
-        # Envoi de tous les paramètres au robot
         p_k = min(200, max(50, self.vars["pKick"].get()))
         t_k = min(400, max(20, self.vars["tKick"].get()))
         c_k = min(15.0, max(2.0, self.vars["cKick"].get()))
@@ -588,7 +563,6 @@ class RelevageTunerGUI:
         self.root.after(40, self._process_network)
 
     def _handle_robot_line(self, line):
-        # Affichage dans le log
         self.log_text.insert("end", line + "\n")
         self.log_text.see("end")
 
@@ -603,7 +577,6 @@ class RelevageTunerGUI:
             self.current_trial_data = []
 
         elif line.startswith("TRIAL,"):
-            # Entête de fin d'essai
             self._parse_trial_header(line)
 
         elif line.startswith("D,"):
@@ -679,17 +652,14 @@ class RelevageTunerGUI:
 
         self.trials.append(trial)
 
-        # Désarmement dans l'UI
         self.is_armed = False
         self.armed_label.config(text="DESARME", bg="#ddd", fg="#333")
         self.btn_arm.config(text="ARMER RELEVAGE AUTO", bg="#2e7d32")
 
-        # Mise à jour des diagnostics
         self.advice_title.config(text=f"Bilan Essai #{trial_no} : {trial.outcome} (Tenue {trial.duration:.1f} s)")
         self.advice_desc.config(text=trial.recommendation)
         self.phase_label.config(text=f"Essai #{trial_no} reçu ({len(trial.data)} éch.).")
 
-        # Mise à jour des graphiques et de l'historique
         self._plot_trial(trial)
         self._add_to_history(trial)
         self._save_session()
@@ -735,7 +705,6 @@ class RelevageTunerGUI:
                     self.ax_pwm.axvspan(start_t, t_sec[i], color=c, alpha=0.7)
                     curr_phase = phases[i]
                     start_t = t_sec[i]
-            # Dernier tronçon
             c, lbl = color_map.get(curr_phase, ("#fff", ""))
             self.ax_angle.axvspan(start_t, t_sec[-1], color=c, alpha=0.7)
             self.ax_rate.axvspan(start_t, t_sec[-1], color=c, alpha=0.7)

@@ -1,19 +1,10 @@
-// Réglage PID par WiFi - ESP32-C6 + MPU6050 + TB6612FNG
-// Core ESP32 Arduino 3.x requis (ledcAttach / ledcWrite)
-//
-//   1. Allume le robot posé immobile (calibration du gyro ~2 s)
-//   2. Connecte le téléphone au WiFi "RobotBalance" (ouvert)
-//   3. Ouvre http://192.168.4.1
-//   4. Règle Kp / Kd / Ki avec les boutons, "Armer", teste, recommence
-//
-// Série (115200) : p15 i0 d1 s7.5 m20 g(inverse gyro) v40(test roues) r ?
+// Ancien reglage PID wifi sur page web
 
 #include <Wire.h>
 #include <WiFi.h>
 #include <WebServer.h>
 #include <esp_wifi.h>
 
-// ---------------- Broches ----------------
 #define SDA_PIN 2
 #define SCL_PIN 3
 
@@ -25,72 +16,68 @@
 #define BIN2 20
 #define STBY 22
 
-// ---------------- WiFi ----------------
+// com sans fil
 const char* AP_SSID = "RobotBalance";
 const char* AP_PASS = "12345678";
-#define AP_OUVERT 1                 // 1 = sans mot de passe
-#define TELEMETRIE_SERIE 0          // 1 = affiche l'angle en série (USB branché uniquement)
+#define AP_OUVERT 1
+#define TELEMETRIE_SERIE 0
 WebServer server(80);
 
-// ---------------- Réglages matériels ----------------
 const int PWM_FREQ = 20000;
 const int PWM_RES  = 8;
-const int PWM_MAX  = 200;           // limite PWM (lipo 7,2V -> moteurs 6V)
+const int PWM_MAX  = 200;
 
-// Moteur B câblé à l'envers (d'après test_moteurs.ino)
+// moteur b câblé à l'envers (d'après test_moteurs.ino)
 const int SIGN_MOTEUR_A = 1;
 const int SIGN_MOTEUR_B = -1;
 
-// ---------------- Paramètres PID (modifiables) ----------------
 float Kp = 15.0;
 float Ki = 0.0;
 float Kd = 1.0;
-float consigne = 7.5;               // angle d'équilibre mesuré (degrés)
-int   pwmMin = 20;                  // PWM minimal pour vaincre la zone morte
+float consigne = 7.5;
+int   pwmMin = 20;
 
-// ---------------- Sécurité ----------------
-const float ANGLE_CHUTE   = 18.0;   // angle ABSOLU (+/-) où le robot touche le sol : moteurs coupés
-const float ANGLE_REPRISE = 6.0;    // écart sous lequel on repart
-const float I_MAX         = 80.0;   // anti-windup (en unités de PWM)
-const float ZONE_RAMPE    = 30.0;   // zone morte progressive : offset 0 -> pwmMin pour |sortie| 0 -> 30
-const float ALPHA_D       = 0.4;    // filtre passe-bas sur le gyro du terme D (~20 Hz)
+// securite
+const float ANGLE_CHUTE   = 18.0;
+const float ANGLE_REPRISE = 6.0;
+const float I_MAX         = 80.0;
+const float ZONE_RAMPE    = 30.0;
+const float ALPHA_D       = 0.4;
 
-// ---------------- Filtre complémentaire ----------------
-float alphaF = 0.98;                // poids du gyro dans le filtre (réglable par la page)
-const unsigned long PERIODE_US = 5000;  // 200 Hz
+float alphaF = 0.98;
+const unsigned long PERIODE_US = 5000;
 
-// ---------------- Variables ----------------
 const uint8_t MPU_ADDR = 0x68;
 float gyroBias = 0;
-float gyroSign = -1.0;              // -1 : réglé pour ton montage (IMU debout), 'g' pour inverser
-float rateF = 0;                    // gyro filtré pour le terme D
+float gyroSign = -1.0;
+float rateF = 0;
 unsigned long dtMaxUs = 0, dtMaxAff = 0, tDtReset = 0;
-float angleAcc = 0;                 // angle venant de l'accéléromètre seul (diagnostic)
+float angleAcc = 0;
 float angle = 0;
 float rate = 0;
 float integrale = 0;
 float sortie = 0;
-bool armed = false;                 // armé depuis la page web
-bool actif = false;                 // le PID tourne
+bool armed = false;
+bool actif = false;
 unsigned long tPrec = 0;
 unsigned long tAffichage = 0;
 
-// Enregistrement du dernier essai (200 Hz, figé à la chute)
+// enregistrement du dernier essai (200 hz, figé à la chute)
 const int LOG_N = 500;
 int16_t logA[LOG_N], logC[LOG_N], logR[LOG_N], logS[LOG_N];
 int  logIdx = 0, logCount = 0;
 bool logFige = true;
 
-// Suivi des essais
+// suivi des essais
 unsigned long tDebutActif = 0;
-float tenue = 0;                    // durée (s) de l'équilibre en cours
-float tenueMax = 0;                 // meilleure durée depuis le dernier réglage
-int   derniereChute = 0;           // +1 = vers l'avant, -1 = vers l'arrière, 0 = aucune
-float dureeChute = 0;               // durée (s) avant cette chute
-int   testPwm = 0;                  // test des roues
+float tenue = 0;
+float tenueMax = 0;
+int   derniereChute = 0;
+float dureeChute = 0;
+int   testPwm = 0;
 unsigned long testFin = 0;
 
-// ---------------- MPU6050 ----------------
+// mpu6050
 void mpuEcrire(uint8_t reg, uint8_t val) {
   Wire.beginTransmission(MPU_ADDR);
   Wire.write(reg);
@@ -99,7 +86,7 @@ void mpuEcrire(uint8_t reg, uint8_t val) {
 }
 
 // angle : 0° à la verticale du capteur, positif vers l'avant
-// gyroRate : positif quand l'angle augmente
+// gyrorate : positif quand l'angle augmente
 bool mpuLire(float &accAngle, float &gyroRate) {
   Wire.beginTransmission(MPU_ADDR);
   Wire.write(0x3B);
@@ -109,22 +96,22 @@ bool mpuLire(float &accAngle, float &gyroRate) {
   int16_t ax = (Wire.read() << 8) | Wire.read();
   int16_t ay = (Wire.read() << 8) | Wire.read();
   int16_t az = (Wire.read() << 8) | Wire.read();
-  Wire.read(); Wire.read();  // température ignorée
+  Wire.read(); Wire.read();
   int16_t gx = (Wire.read() << 8) | Wire.read();
   int16_t gy = (Wire.read() << 8) | Wire.read();
   int16_t gz = (Wire.read() << 8) | Wire.read();
   (void)ax; (void)gy; (void)gz;
 
-  accAngle = atan2((float)az, (float)ay) * RAD_TO_DEG;  // IMU montée "debout"
-  gyroRate = gyroSign * gx / 65.5;                      // ±500 °/s => 65.5 LSB/(°/s)
+  accAngle = atan2((float)az, (float)ay) * RAD_TO_DEG;
+  gyroRate = gyroSign * gx / 65.5;
   return true;
 }
 
 void mpuInit() {
-  mpuEcrire(0x6B, 0x00);  // sortie de veille
-  mpuEcrire(0x1A, 0x03);  // filtre passe-bas ~44 Hz
-  mpuEcrire(0x1B, 0x08);  // gyro ±500 °/s
-  mpuEcrire(0x1C, 0x00);  // accéléro ±2 g
+  mpuEcrire(0x6B, 0x00);
+  mpuEcrire(0x1A, 0x03);
+  mpuEcrire(0x1B, 0x08);
+  mpuEcrire(0x1C, 0x00);
 }
 
 void calibrationGyro() {
@@ -144,8 +131,8 @@ void calibrationGyro() {
   Serial.println(gyroBias);
 }
 
-// ---------------- Moteurs ----------------
-// vitesse > 0 : in1 HIGH / in2 LOW
+// moteurs
+// vitesse > 0 : in1 high / in2 low
 void moteur(int pwmPin, int in1, int in2, int vitesse) {
   vitesse = constrain(vitesse, -PWM_MAX, PWM_MAX);
   if (vitesse > 0) {
@@ -166,8 +153,7 @@ void commandeMoteurs(int v) {
   moteur(PWMB, BIN1, BIN2, SIGN_MOTEUR_B * v);
 }
 
-// ---------------- Paramètres (série + web) ----------------
-void razEssai() {            // nouveau réglage => nouvel essai
+void razEssai() {
   integrale = 0;
   tenueMax = 0;
   derniereChute = 0;
@@ -181,27 +167,27 @@ void appliquerParam(char c, float v) {
     case 'd': Kd = max(v, 0.0f); razEssai(); break;
     case 's': consigne = v;      razEssai(); break;
     case 'm': pwmMin = max((int)v, 0); razEssai(); break;
-    case 'r':                    // valeurs de départ
+    case 'r':
       Kp = 15.0; Ki = 0.0; Kd = 1.0;
       razEssai();
       break;
-    case 'g':                    // inverser le sens du gyro
+    case 'g':
       gyroSign = -gyroSign;
-      gyroBias = -gyroBias;      // le biais mesuré change de signe aussi
+      gyroBias = -gyroBias;
       razEssai();
       break;
-    case 'v':                    // test roues : PWM fixe 0,8 s (robot désarmé)
+    case 'v':
       testPwm = constrain((int)v, -PWM_MAX, PWM_MAX);
       testFin = millis() + 800;
       break;
-    case 'z':                    // recalibrer le gyro (robot immobile)
+    case 'z':
       armed = false;
       commandeMoteurs(0);
       calibrationGyro();
       razEssai();
       break;
     case 'f': alphaF = constrain(v, 0.90f, 0.9995f); razEssai(); break;
-    case 'a':                    // armer / désarmer
+    case 'a':
       armed = (v > 0.5);
       integrale = 0;
       break;
@@ -223,7 +209,6 @@ void lireSerie() {
   afficheParametres();
 }
 
-// ---------------- Page web ----------------
 const char PAGE[] PROGMEM = R"rawliteral(
 <!DOCTYPE html><html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -367,7 +352,6 @@ void hData() {
   server.send(200, "application/json", buf);
 }
 
-// ---------------- Setup ----------------
 void setup() {
   Serial.begin(115200);
 
@@ -387,11 +371,11 @@ void setup() {
   delay(100);
   calibrationGyro();
 
-  // Angle initial depuis l'accéléromètre
+// angle initial depuis l'accéléromètre
   float a, g;
   if (mpuLire(a, g)) angle = a;
 
-  // Point d'accès WiFi
+// wifi
   WiFi.persistent(false);
   WiFi.disconnect(true, true);
   WiFi.mode(WIFI_AP);
@@ -410,14 +394,13 @@ void setup() {
   server.begin();
   Serial.print("WiFi : ");
   Serial.print(AP_SSID);
-  Serial.print("  ->  http://");
+  Serial.print("  ->  http:
   Serial.println(WiFi.softAPIP());
 
   afficheParametres();
   tPrec = micros();
 }
 
-// ---------------- Boucle ----------------
 void loop() {
   server.handleClient();
   lireSerie();
@@ -436,32 +419,31 @@ void loop() {
 
   float accAngle, gyroRate;
   if (!mpuLire(accAngle, gyroRate)) {
-    commandeMoteurs(0);  // perte de l'IMU : on coupe
+    commandeMoteurs(0);
     return;
   }
   rate = gyroRate - gyroBias;
   angleAcc = accAngle;
   rateF += ALPHA_D * (rate - rateF);
 
-  // Filtre complémentaire
+// filtre complémentaire
   angle = alphaF * (angle + rate * dt) + (1.0 - alphaF) * accAngle;
 
   float erreur = angle - consigne;
 
-  // Test des roues (robot désarmé) : PWM fixe pendant 0,8 s
+// test des roues (robot désarmé) : pwm fixe pendant 0,8 s
   if (!armed && (long)(testFin - millis()) > 0) {
     commandeMoteurs(testPwm);
     actif = false;
     return;
   }
 
-  // Mémorise la chute (pas le désarmement) : limites mécaniques à +/-18° absolus
+// armement
   if (actif && armed && fabs(angle) > ANGLE_CHUTE) {
     derniereChute = (angle > 0) ? 1 : -1;
     dureeChute = tenue;
   }
 
-  // Sécurité : désarmé, chute ou reprise (la reprise reste autour de la consigne)
   if (!armed || fabs(angle) > ANGLE_CHUTE) {
     actif = false;
   } else if (!actif && fabs(erreur) < ANGLE_REPRISE) {
@@ -481,7 +463,6 @@ void loop() {
     tenue = (millis() - tDebutActif) / 1000.0;
     if (tenue > tenueMax) tenueMax = tenue;
 
-    // PID : P sur l'erreur, I avec anti-windup, D sur la vitesse gyro
     integrale += Ki * erreur * dt;
     integrale = constrain(integrale, -I_MAX, I_MAX);
 
@@ -497,8 +478,6 @@ void loop() {
       if (logCount < LOG_N) logCount++;
     }
 
-    // Compensation de zone morte progressive : l'offset monte de 0 à pwmMin
-    // quand |sortie| passe de 0 à ZONE_RAMPE (pas d'à-coup autour de zéro)
     float absS = fabs(sortie);
     float offset = pwmMin * min(absS / ZONE_RAMPE, 1.0f);
     int cmd = (int)constrain(absS + offset, 0.0f, (float)PWM_MAX);
@@ -507,7 +486,7 @@ void loop() {
   }
 
 #if TELEMETRIE_SERIE
-  // Télémétrie série à 20 Hz (Serial Plotter)
+// télémétrie série à 20 hz (serial plotter)
   if (millis() - tAffichage > 50) {
     tAffichage = millis();
     Serial.printf("angle:%.2f,consigne:%.2f,sortie:%.1f\n", angle, consigne, sortie);

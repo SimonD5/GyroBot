@@ -1,40 +1,41 @@
+// Telecommande Gyrobot v7 (ESP32-C6 + ecran ST7735 + ESP-NOW)
+
 #include <SPI.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_ST7735.h>
 #include <esp_now.h>
 #include <WiFi.h>
-#include "esp_wifi.h"//vLR
-#include <Preferences.h>//stockage persistant (NVS) de la config
-// ---- Brochage (modifiable) ----
-//Ecran
+#include "esp_wifi.h"
+#include <Preferences.h>
+// ecran
 const uint8_t TFT_SCK   = 2;
-const uint8_t TFT_MOSI  = 42; // SDA sur l'écran
+const uint8_t TFT_MOSI  = 42;
 const uint8_t TFT_CS    = 39;
-const uint8_t TFT_DC    = 41; // A0 sur l'écran
+const uint8_t TFT_DC    = 41;
 const uint8_t TFT_RST   = 40;
-const uint8_t TFT_LED   = 1;  // backlight
-//Bouton
+const uint8_t TFT_LED   = 1;
+// bouton
 const uint8_t BtnArD = 38;
 const uint8_t BtnArG = 16;
 const uint8_t BtnAvG = 21;
 const uint8_t BtnAvD = 12;
 const uint8_t BtnAvH = 48;
-//potentiometre
+// potentiometre
 const uint8_t PotG = 7;
 const uint8_t PotP = 8;
 const uint8_t PotI = 3;
 const uint8_t PotD = 4;
-//LED
+// led
 const uint8_t LED = 17;
-//Joystick Gauche
+// joystick gauche
 const uint8_t JoyG_X = 6;
 const uint8_t JoyG_Y = 5;
 const uint8_t JoyG_btn = 11;
-//Joystick Droit
+// joystick droit
 const uint8_t JoyD_X = 9;
 const uint8_t JoyD_Y = 10;
 const uint8_t JoyD_btn = 18;
-//Variable
+// variable
 bool Verif_Capteur = true;
 int P = 0;
 int I = 1;
@@ -52,24 +53,20 @@ int JDX = -1;
 int JDY = -1;
 int JDBtn = -1;
 
-// ---- Parametres WiFi ----
-uint8_t wifiChannel = 1;      // canal ESP-NOW / WiFi utilise (1 a 13)
-bool wifiLongRange = true;   // mode longue portee ESP-NOW (protocole proprietaire WIFI_PROTOCOL_LR)
-int indexPuissance = 0;       // index courant dans tablePuissance[]
+// com sans fil
+uint8_t wifiChannel = 1;
+bool wifiLongRange = true;
+int indexPuissance = 0;
 
-// ---- Stockage persistant (survit a une coupure d'alimentation) ----
 Preferences preferences;
-const char* PREFS_NAMESPACE = "config"; // espace de noms NVS dedie a la config de la telecommande
+const char* PREFS_NAMESPACE = "config";
 
-// ---- Etat de la liaison ESP-NOW (point de statut + stats) ----
+// com sans fil
 enum EtatLiaison { LIAISON_INACTIVE, LIAISON_SANS_ACCUSE, LIAISON_OK };
-EtatLiaison etatLiaison = LIAISON_INACTIVE;       // etat courant (pour le point de statut)
-float tauxReussiteEnvoi = 1.0;                    // moyenne glissante des envois reussis (0.0 a 1.0)
-const float SEUIL_TAUX_LIAISON_OK = 0.85;         // en dessous : orange, au-dessus (ou egal) : vert
-// (ce lissage evite que le point clignote au moindre paquet perdu isole : il faut
-//  une degradation un peu plus soutenue du taux de reussite pour passer a l'orange)
+EtatLiaison etatLiaison = LIAISON_INACTIVE;
+float tauxReussiteEnvoi = 1.0;
+const float SEUIL_TAUX_LIAISON_OK = 0.85;
 
-// Statistiques de perte de paquets sur la derniere minute (fenetre glissante, 1 case par seconde)
 const int NB_SECONDES_STATS = 60;
 int statsEnvoyesParSeconde[NB_SECONDES_STATS] = {0};
 int statsPerdusParSeconde[NB_SECONDES_STATS] = {0};
@@ -77,7 +74,7 @@ int indexSecondeCourante = 0;
 unsigned long debutSecondeCourante = 0;
 
 Adafruit_ST7735 tft = Adafruit_ST7735(&SPI, TFT_CS, TFT_DC, TFT_RST);
-//ESP Now
+// esp now
 uint8_t adresseBroadcast[] = {0x44, 0xB1, 0x76 , 0xCD , 0xD5 , 0x80};
 typedef struct {
   int P;
@@ -101,8 +98,6 @@ void onEnvoiTermine(const uint8_t *mac_addr, esp_now_send_status_t status) {
   bool succes = (status == ESP_NOW_SEND_SUCCESS);
   Serial.println(succes ? "Envoi OK" : "Envoi ECHEC");
 
-  // Moyenne glissante du taux de reussite : sert a lisser le point de statut
-  // pour eviter qu'il change de couleur au moindre paquet perdu isole.
   tauxReussiteEnvoi = tauxReussiteEnvoi * 0.9f + (succes ? 1.0f : 0.0f) * 0.1f;
   etatLiaison = (tauxReussiteEnvoi >= SEUIL_TAUX_LIAISON_OK) ? LIAISON_OK : LIAISON_SANS_ACCUSE;
 
@@ -115,7 +110,6 @@ bool envoyerDonnees(const uint8_t *macDestinataire, const Message &msg) {
   return resultat == ESP_OK;
 }
 
-// Fait avancer la fenetre glissante d'une seconde si necessaire (appele depuis loop())
 void mettreAJourFenetreStats() {
   unsigned long maintenant = millis();
   if (maintenant - debutSecondeCourante >= 1000) {
@@ -126,7 +120,6 @@ void mettreAJourFenetreStats() {
   }
 }
 
-// Additionne les paquets envoyes/perdus sur toute la fenetre (~60 dernieres secondes)
 void calculerStatsPerte(int &totalEnvoyes, int &totalPerdus) {
   totalEnvoyes = 0;
   totalPerdus = 0;
@@ -136,7 +129,7 @@ void calculerStatsPerte(int &totalEnvoyes, int &totalPerdus) {
   }
 }
 
-// ---- Table des puissances WiFi disponibles (valeurs de wifi_power_t) ----
+// com sans fil
 struct PuissanceWifi {
   wifi_power_t valeur;
   const char* label;
@@ -158,11 +151,10 @@ const PuissanceWifi tablePuissance[] = {
 };
 const int NB_PUISSANCES = sizeof(tablePuissance) / sizeof(tablePuissance[0]);
 
-// ---- Gestion WiFi (canal / longue portee / puissance) ----
+// com sans fil
 void appliquerCanalWifi(uint8_t canal) {
   esp_wifi_set_channel(canal, WIFI_SECOND_CHAN_NONE);
 
-  // Le peer ESP-NOW doit etre recree pour prendre en compte le nouveau canal
   esp_now_del_peer(adresseBroadcast);
   esp_now_peer_info_t peerInfo = {};
   memcpy(peerInfo.peer_addr, adresseBroadcast, 6);
@@ -174,16 +166,13 @@ void appliquerCanalWifi(uint8_t canal) {
 }
 
 void appliquerLonguePortee(bool activer) {
-  // Le mode longue portee (LR) est un protocole proprietaire Espressif :
-  // l'emetteur ET le recepteur doivent l'avoir active pour communiquer.
   uint8_t protocole = WIFI_PROTOCOL_11B | WIFI_PROTOCOL_11G | WIFI_PROTOCOL_11N;
   if (activer) {
     protocole |= WIFI_PROTOCOL_LR;
   }
   esp_wifi_set_protocol(WIFI_IF_STA, protocole);
 
-  // Force le debit ESP-NOW correspondant : sans cet appel, le flag LR
-  // ci-dessus n'a aucun effet reel sur les paquets ESP-NOW.
+// ci-dessus n'a aucun effet reel sur les paquets esp-now.
   if (activer) {
     esp_wifi_config_espnow_rate(WIFI_IF_STA, WIFI_PHY_RATE_LORA_250K);
   } else {
@@ -195,18 +184,14 @@ void appliquerPuissanceWifi(int index) {
   WiFi.setTxPower(tablePuissance[index].valeur);
 }
 
-// ================= CONFIGURATION PERSISTANTE (NVS / Preferences) =================
-// Charge la config sauvegardee au dernier demarrage (canal, LR, puissance, adresse).
-// Si aucune valeur n'a encore ete enregistree, on garde les valeurs par defaut
-// codees en dur au debut du fichier (getXxx renvoie alors la valeur passee en 2e argument).
 void chargerConfiguration() {
-  preferences.begin(PREFS_NAMESPACE, true); // true = lecture seule
+  preferences.begin(PREFS_NAMESPACE, true);
 
   wifiChannel = preferences.getUChar("canal", wifiChannel);
   wifiLongRange = preferences.getBool("lr", wifiLongRange);
   indexPuissance = preferences.getInt("puiss", indexPuissance);
   if (indexPuissance < 0 || indexPuissance >= NB_PUISSANCES) {
-    indexPuissance = 0; // securite si la valeur stockee n'est plus valide (ex: table modifiee)
+    indexPuissance = 0;
   }
 
   uint8_t adresseLue[6];
@@ -214,7 +199,6 @@ void chargerConfiguration() {
   if (nbOctetsLus == sizeof(adresseLue)) {
     memcpy(adresseBroadcast, adresseLue, sizeof(adresseBroadcast));
   }
-  // si rien n'est enregistre (nbOctetsLus == 0), l'adresse par defaut codee en dur est conservee
 
   preferences.end();
 }
@@ -243,7 +227,7 @@ void sauvegarderAdresse(const uint8_t *adresse) {
   preferences.end();
 }
 
-// ---- Ecran ----
+// affichage ecran
 #define BG_COLOR      ST77XX_BLACK
 #define ROBOT_COLOR   ST77XX_WHITE
 #define ACCENT_COLOR  ST77XX_CYAN
@@ -255,25 +239,23 @@ void sauvegarderAdresse(const uint8_t *adresse) {
 #define SPEED_Y  14
 #define BATT_Y   76
 
-// ---- Point de statut liaison (coin haut-gauche, present sur tous les ecrans) ----
 const int16_t STATUT_X = 7;
 const int16_t STATUT_Y = 7;
 const int16_t STATUT_R = 3;
-const uint16_t COULEUR_STATUT_VERT   = 0x07E0; // vert : envoi + accuse de reception recu
-const uint16_t COULEUR_STATUT_ORANGE = 0xFC00; // orange : envoi en cours, pas (encore) d'accuse de reception
-EtatLiaison dernierEtatPointPrincipal = LIAISON_INACTIVE; // cache pour l'ecran principal (evite le scintillement)
+const uint16_t COULEUR_STATUT_VERT   = 0x07E0;
+const uint16_t COULEUR_STATUT_ORANGE = 0xFC00;
+EtatLiaison dernierEtatPointPrincipal = LIAISON_INACTIVE;
 
 void dessinerPointStatut(EtatLiaison etat) {
   uint16_t couleur;
   switch (etat) {
     case LIAISON_OK:          couleur = COULEUR_STATUT_VERT;   break;
     case LIAISON_SANS_ACCUSE: couleur = COULEUR_STATUT_ORANGE; break;
-    default:                  couleur = ST77XX_RED;            break; // LIAISON_INACTIVE : rien n'est envoye (menus)
+    default:                  couleur = ST77XX_RED;            break;
   }
   tft.fillCircle(STATUT_X, STATUT_Y, STATUT_R, couleur);
 }
 
-// A appeler dans loop() : ne redessine le point que si l'etat a change (evite le scintillement / le flash SPI inutile)
 void mettreAJourPointStatutPrincipal() {
   if (etatLiaison != dernierEtatPointPrincipal) {
     dernierEtatPointPrincipal = etatLiaison;
@@ -281,7 +263,6 @@ void mettreAJourPointStatutPrincipal() {
   }
 }
 
-// ---- Layout écran Diagnostic ----
 const int16_t DIAG_BTN_W    = 26;
 const int16_t DIAG_BTN_H    = 12;
 const int16_t DIAG_ARG_X    = 4;
@@ -310,13 +291,13 @@ const int16_t DIAG_POTG_CX = 25;
 const int16_t DIAG_POTG_CY = 94;
 const int16_t DIAG_POTG_R  = 13;
 
-//Reception données
-int vitesse  = 12;   // km/h
-int batterie = 78;   // %
+// reception données
+int vitesse  = 12;
+int batterie = 78;
 
 
 int mapJoystickAxis(int valeur, int centre, int minBrut, int maxBrut, int sortieMin, int sortieMax, int zoneMorte = 200) {
-  // Zone morte autour du centre : évite le jitter quand le stick est relâché
+// zone morte
   if (abs(valeur - centre) <= zoneMorte) {
     return 0;
   }
@@ -328,10 +309,8 @@ int mapJoystickAxis(int valeur, int centre, int minBrut, int maxBrut, int sortie
   }
 }
 
-// ---- Direction des joysticks (les 2 sticks confondus), utilise pour naviguer dans les menus ----
-// Grace a mapJoystickAxis, la convention est deja uniforme entre les 2 sticks :
 // sortie > 0 = haut/droite, sortie < 0 = bas/gauche
-const int SEUIL_JOYSTICK = 13; // sur une echelle de 0 a 15
+const int SEUIL_JOYSTICK = 13;
 
 bool joystickHaut() {
   int yG = mapJoystickAxis(analogRead(JoyG_Y), 1935, 0, 4095, -15, 15);
@@ -357,12 +336,6 @@ bool joystickGauche() {
   return (xG < -SEUIL_JOYSTICK) || (xD < -SEUIL_JOYSTICK);
 }
 
-// ---- Lissage des potentiometres P/I/D/G (evite le flicker sur un seuil de map()) ----
-// Sans lissage, quelques points de bruit ADC suffisent a faire alterner la valeur
-// mappee entre 2 valeurs adjacentes quand le potard est pile sur un seuil de map().
-// Ici, la valeur retenue ne bouge que si la lecture brute s'est deplacee de plus de
-// HYSTERESIS_POT points depuis la derniere valeur retenue : ca elimine le flicker
-// sans sacrifier la finesse de reglage (1 pas de 0-30 = environ 136 points bruts).
 const int HYSTERESIS_POT = 25;
 int brutPrecedentP = -1;
 int brutPrecedentI = -1;
@@ -379,51 +352,49 @@ int lireAvecHysteresis(uint8_t broche, int &derniereValeurBrute) {
 
 void setup() {
   Serial.begin(115200);
-  //LED
+// led
   pinMode(LED, OUTPUT);
   analogWrite(LED, 10);
-  //bouton
-  pinMode(BtnArD, INPUT_PULLDOWN);//0 relaché 1 appuyé
-  pinMode(BtnArG, INPUT_PULLDOWN);//0 relaché 1 appuyé
-  pinMode(BtnAvG, INPUT_PULLUP);//1 relaché 0 appuyé
-  pinMode(BtnAvD, INPUT_PULLUP);//1 relaché 0 appuyé
-  pinMode(BtnAvH, INPUT_PULLUP);//1 relaché 0 appuyé
-  //potentiometre
-  pinMode(PotG, INPUT);//4095=petit 0=grand
-  pinMode(PotP, INPUT);//0=petit 4095=grand
-  pinMode(PotI, INPUT);//0=petit 4095=grand
-  pinMode(PotD, INPUT);//0=petit 4095=grand
-  //joystick gauche
-  pinMode(JoyG_btn, INPUT_PULLUP);//1 relaché 0 appuyé
-  pinMode(JoyG_Y, INPUT);//1935=milieu 0=haut 4095=bas
-  pinMode(JoyG_X, INPUT);//1846=milieu 0=droite 4095=gauche
-  //joystick droit
-  pinMode(JoyD_btn, INPUT_PULLUP);//1 relaché 0 appuyé
-  pinMode(JoyD_Y, INPUT);//1946=milieu 4095=haut 0=bas
-  pinMode(JoyD_X, INPUT);//1925=milieu 4095=droite 0=gauche
+// bouton
+  pinMode(BtnArD, INPUT_PULLDOWN);
+  pinMode(BtnArG, INPUT_PULLDOWN);
+  pinMode(BtnAvG, INPUT_PULLUP);
+  pinMode(BtnAvD, INPUT_PULLUP);
+  pinMode(BtnAvH, INPUT_PULLUP);
+// potentiometre
+  pinMode(PotG, INPUT);
+  pinMode(PotP, INPUT);
+  pinMode(PotI, INPUT);
+  pinMode(PotD, INPUT);
+// joystick gauche
+  pinMode(JoyG_btn, INPUT_PULLUP);
+  pinMode(JoyG_Y, INPUT);
+  pinMode(JoyG_X, INPUT);
+// joystick droit
+  pinMode(JoyD_btn, INPUT_PULLUP);
+  pinMode(JoyD_Y, INPUT);
+  pinMode(JoyD_X, INPUT);
 
-  //ecran
+// ecran
   pinMode(TFT_LED, OUTPUT);
-  digitalWrite(TFT_LED, HIGH); // rétroéclairage allumé
+  digitalWrite(TFT_LED, HIGH);
 
   SPI.begin(TFT_SCK, -1, TFT_MOSI, TFT_CS);
 
   tft.initR(INITR_BLACKTAB);
-  tft.setRotation(1); // paysage, 160x128
+  tft.setRotation(1);
   tft.fillScreen(BG_COLOR);
 
-  // Recharge la config sauvegardee (canal, LR, puissance, adresse) AVANT de
-  // l'appliquer plus bas : c'est elle qui determine les valeurs par defaut au demarrage.
   chargerConfiguration();
 
-  //ESP now
+// esp now
   WiFi.mode(WIFI_STA);
 
-  // Application des parametres WiFi par defaut (canal, puissance)
+// wifi
   esp_wifi_set_channel(wifiChannel, WIFI_SECOND_CHAN_NONE);
   appliquerPuissanceWifi(indexPuissance);
 
-  debutSecondeCourante = millis(); // depart de la fenetre glissante des stats de perte
+  debutSecondeCourante = millis();
 
   Serial.print("Adresse MAC de ce module : ");
   Serial.println(WiFi.macAddress());
@@ -435,8 +406,6 @@ void setup() {
   }
   esp_now_register_send_cb(onEnvoiTermine);
 
-  // Le reglage du LR (protocole + debit ESP-NOW) doit se faire APRES
-  // esp_now_init(), sinon la configuration du debit echoue silencieusement.
   appliquerLonguePortee(wifiLongRange);
 
   esp_now_peer_info_t peerInfo = {};
@@ -447,7 +416,7 @@ void setup() {
     Serial.println("Erreur ajout peer broadcast");
   }
 
-  //boot Sequence;
+// boot sequence;
   const char* messages[] = {
     "Demarrage systeme...",
     "Ne rien toucher",
@@ -515,13 +484,11 @@ void loop() {
   donneesEnvoyees.JDY   = mapJoystickAxis(JDY, 1946, 0, 4095, -15, 15);
   donneesEnvoyees.JDBtn = JDBtn;
 
-  // Fenetre glissante des stats de perte de paquets (case = seconde en cours)
   mettreAJourFenetreStats();
   statsEnvoyesParSeconde[indexSecondeCourante]++;
 
   envoyerDonnees(adresseBroadcast, donneesEnvoyees);
 
-  // Met a jour le point de statut (coin haut-gauche) uniquement si l'etat a change
   mettreAJourPointStatutPrincipal();
 
   Serial.println("");
@@ -559,7 +526,7 @@ void loop() {
   delay(10);
 }
 
-//Fonction de verification des capteurs
+// fonction de verification des capteurs
 void Verification_Capteur() {
   if (digitalRead(BtnAvG) != 1) {
     Verif_Capteur = false;
@@ -567,42 +534,42 @@ void Verification_Capteur() {
   }
   if (digitalRead(BtnAvD) != 1) {
     Verif_Capteur = false;
-    //Serial.println("BtnAvD HS");
+// serial.println("btnavd hs");
   }
   if (digitalRead(BtnAvH) != 1) {
     Verif_Capteur = false;
-    //Serial.println("BtnAvH HS");
+// serial.println("btnavh hs");
   }
   if (digitalRead(BtnArG) != 0) {
     Verif_Capteur = false;
-    //Serial.println("BtnArG HS");
+// serial.println("btnarg hs");
   }
   if (digitalRead(BtnArD) != 0) {
     Verif_Capteur = false;
-    //Serial.println("BtnArD HS");
+// serial.println("btnard hs");
   }
   if (digitalRead(JoyG_btn) != 1) {
     Verif_Capteur = false;
-    //Serial.println("JoyG_btn HS");
+// serial.println("joyg_btn hs");
   }
   if (digitalRead(JoyD_btn) != 1) {
     Verif_Capteur = false;
-    //Serial.println("JoyD_btn HS");
+// serial.println("joyd_btn hs");
   }
   if (analogRead(JoyG_X) > 1846 + 150 || analogRead(JoyG_X) < 1846 - 150 || analogRead(JoyG_Y) > 1935 + 150 || analogRead(JoyG_Y) < 1935 - 150) {
     Verif_Capteur = false;
-    //Serial.println("JoyG_X HS");
+// serial.println("joyg_x hs");
   }
   if (analogRead(JoyD_X) > 1925 + 150 || analogRead(JoyD_X) < 1925 - 150 || analogRead(JoyD_Y) > 1946 + 150 || analogRead(JoyD_Y) < 1946 - 150) {
     Verif_Capteur = false;
-    //Serial.println("JoyD_X HS");
+// serial.println("joyd_x hs");
   }
 }
 
 
-// ================= ÉCRAN DE DÉMARRAGE =================
+// affichage ecran
 void showMenu() {
-  etatLiaison = LIAISON_INACTIVE; // plus aucun envoi tant qu'on est dans les menus -> point rouge
+  etatLiaison = LIAISON_INACTIVE;
 
   const char* items[] = {
     "1. Diagnostic",
@@ -645,13 +612,13 @@ void showMenu() {
       else if (selected == 2) {
         menuWifi();
       }
-      // selected == 3 (Quitter) : rien de plus a faire
-      drawMainScreen(); // on reaffiche toujours l'ecran principal en sortant du menu
+// selected == 3 (quitter) : rien de plus a faire
+      drawMainScreen();
       return;
     }
 
     if (joystickGauche()) {
-      // Equivalent a "4. Quitter"
+// equivalent a "4. quitter"
       drawMainScreen();
       return;
     }
@@ -692,7 +659,7 @@ void drawDiagStatic() {
   tft.setTextColor(TEXT_COLOR);
   tft.setTextSize(1);
 
-  // Boutons arriere
+// boutons arriere
   tft.drawRect(DIAG_ARG_X, DIAG_BTN_TOP_Y, DIAG_BTN_W, DIAG_BTN_H, TEXT_COLOR);
   tft.setCursor(DIAG_ARG_X, DIAG_BTN_TOP_Y + DIAG_BTN_H + 2);
   tft.print("ArG");
@@ -701,7 +668,7 @@ void drawDiagStatic() {
   tft.setCursor(DIAG_ARD_X, DIAG_BTN_TOP_Y + DIAG_BTN_H + 2);
   tft.print("ArD");
 
-  // Joysticks
+// joysticks
   tft.drawCircle(DIAG_JOYG_CX, DIAG_JOY_CY, DIAG_JOY_R, TEXT_COLOR);
   tft.setCursor(DIAG_JOYG_CX - 12, DIAG_JOY_CY + DIAG_JOY_R + 2);
   tft.print("JoyG");
@@ -710,12 +677,12 @@ void drawDiagStatic() {
   tft.setCursor(DIAG_JOYD_CX - 12, DIAG_JOY_CY + DIAG_JOY_R + 2);
   tft.print("JoyD");
 
-  // Boutons avant en triangle (Haut / Gauche / Droite)
+// boutons avant en triangle (haut / gauche / droite)
   tft.drawCircle(DIAG_AVH_X, DIAG_AVH_Y, DIAG_TRI_R, TEXT_COLOR);
   tft.drawCircle(DIAG_AVG_X, DIAG_AVG_Y, DIAG_TRI_R, TEXT_COLOR);
   tft.drawCircle(DIAG_AVD_X, DIAG_AVD_Y, DIAG_TRI_R, TEXT_COLOR);
 
-  // Potentiometres lineaires P, I, D
+// potentiometres lineaires p, i, d
   tft.drawRect(DIAG_POTP_X, DIAG_POT_TOP_Y, DIAG_POT_BAR_W, DIAG_POT_BAR_H, TEXT_COLOR);
   tft.setCursor(DIAG_POTP_X + 2, DIAG_POT_TOP_Y + DIAG_POT_BAR_H + 2);
   tft.print("P");
@@ -728,7 +695,7 @@ void drawDiagStatic() {
   tft.setCursor(DIAG_POTD_X + 2, DIAG_POT_TOP_Y + DIAG_POT_BAR_H + 2);
   tft.print("D");
 
-  // Potentiometre rotatif
+// potentiometre rotatif
   tft.drawCircle(DIAG_POTG_CX, DIAG_POTG_CY, DIAG_POTG_R, TEXT_COLOR);
   tft.setCursor(DIAG_POTG_CX - 3, DIAG_POTG_CY + DIAG_POTG_R + 2);
   tft.print("G");
@@ -741,9 +708,9 @@ void drawDiagStatic() {
 }
 
 void updateDiagButtons() {
-  bool pArG = (digitalRead(BtnArG) == 1); // pulldown : 1 = appuye
+  bool pArG = (digitalRead(BtnArG) == 1);
   bool pArD = (digitalRead(BtnArD) == 1);
-  bool pAvH = (digitalRead(BtnAvH) == 0); // pullup : 0 = appuye
+  bool pAvH = (digitalRead(BtnAvH) == 0);
   bool pAvG = (digitalRead(BtnAvG) == 0);
   bool pAvD = (digitalRead(BtnAvD) == 0);
 
@@ -758,7 +725,7 @@ void updateDiagButtons() {
 void updateDiagJoysticks() {
   int maxOff = DIAG_JOY_R - DIAG_JOY_DOT_R - 2;
 
-  // ===== Joystick gauche =====
+// joystick
   tft.fillCircle(DIAG_JOYG_CX, DIAG_JOY_CY, DIAG_JOY_R - 1, BG_COLOR);
 
   int gx = map(analogRead(JoyG_X), 0, 4095, maxOff, -maxOff);
@@ -771,14 +738,14 @@ void updateDiagJoysticks() {
     ACCENT_COLOR
   );
 
-  // Appui joystick gauche
+// appui joystick gauche
   bool joyGPressed = (digitalRead(JoyG_btn) == 0);
 
   if (joyGPressed) {
     tft.fillCircle(DIAG_JOYG_CX, DIAG_JOY_CY, 4, ROBOT_COLOR);
   }
 
-  // ===== Joystick droit =====
+// joystick
   tft.fillCircle(DIAG_JOYD_CX, DIAG_JOY_CY, DIAG_JOY_R - 1, BG_COLOR);
 
   int dx = map(analogRead(JoyD_X), 0, 4095, -maxOff, maxOff);
@@ -791,7 +758,7 @@ void updateDiagJoysticks() {
     ACCENT_COLOR
   );
 
-  // Appui joystick droit
+// appui joystick droit
   bool joyDPressed = (digitalRead(JoyD_btn) == 0);
 
   if (joyDPressed) {
@@ -802,7 +769,7 @@ void updateDiagJoysticks() {
 void updateDiagPots() {
   int barInnerH = DIAG_POT_BAR_H - 2;
 
-  // Potentiometres lineaires (0=petit, 4095=grand)
+// potentiometres lineaires (0=petit, 4095=grand)
   tft.fillRect(DIAG_POTP_X + 1, DIAG_POT_TOP_Y + 1, DIAG_POT_BAR_W - 2, barInnerH, BG_COLOR);
   int fhP = map(analogRead(PotP), 0, 4095, 0, barInnerH);
   tft.fillRect(DIAG_POTP_X + 1, DIAG_POT_TOP_Y + 1 + (barInnerH - fhP), DIAG_POT_BAR_W - 2, fhP, ACCENT_COLOR);
@@ -815,7 +782,7 @@ void updateDiagPots() {
   int fhD = map(analogRead(PotD), 0, 4095, 0, barInnerH);
   tft.fillRect(DIAG_POTD_X + 1, DIAG_POT_TOP_Y + 1 + (barInnerH - fhD), DIAG_POT_BAR_W - 2, fhD, ACCENT_COLOR);
 
-  // Potentiometre rotatif (4095=petit, 0=grand)
+// potentiometre rotatif (4095=petit, 0=grand)
   tft.fillCircle(DIAG_POTG_CX, DIAG_POTG_CY, DIAG_POTG_R - 2, BG_COLOR);
   float angleDeg = map(analogRead(PotG), 0, 4095, 135, -135);
   float angleRad = angleDeg * PI / 180.0;
@@ -859,10 +826,8 @@ void reglages() {
   }
 }
 
-// ================= ÉCRAN PARAMETRES WIFI =================
+// affichage ecran
 void menuWifi() {
-  // Anti-rebond a l'entree : le bouton ou le joystick (droite) peuvent
-  // etre encore actifs suite a la validation faite dans le menu principal
   while (digitalRead(BtnAvD) == 0 || joystickDroite()) delay(20);
 
   const char* items[] = {
@@ -897,7 +862,7 @@ void menuWifi() {
     }
 
     if (digitalRead(BtnAvD) == 0 || joystickDroite()) {
-      while (digitalRead(BtnAvD) == 0) delay(20); // anti-rebond bouton
+      while (digitalRead(BtnAvD) == 0) delay(20);
 
       if (selected == 0) {
         reglerCanal();
@@ -916,12 +881,11 @@ void menuWifi() {
     }
 
     if (joystickGauche()) {
-      return; // equivalent a "5. Retour" : on repart vers le menu principal
+      return;
     }
 
     delay(20);
   }
-  // Retour automatique apres inactivite : on repart vers le menu principal
 }
 
 void afficherMenuWifi(int selected, int n, const char* items[]) {
@@ -947,8 +911,6 @@ void afficherMenuWifi(int selected, int n, const char* items[]) {
   dessinerPointStatut(etatLiaison);
 }
 
-// ---- Icones triangle pour les legendes de boutons ----
-// (remplacent le texte "AvG"/"AvH"/"AvD" par un pictogramme directionnel)
 void dessinerTriangleBas(int16_t cx, int16_t cy, int16_t taille, uint16_t couleur) {
   tft.fillTriangle(cx - taille, cy - taille, cx + taille, cy - taille, cx, cy + taille, couleur);
 }
@@ -961,7 +923,6 @@ void dessinerTriangleDroite(int16_t cx, int16_t cy, int16_t taille, uint16_t cou
   tft.fillTriangle(cx - taille, cy - taille, cx - taille, cy + taille, cx + taille, cy, couleur);
 }
 
-// ---- Reglage du canal ----
 void reglerCanal() {
   afficherReglageCanal();
   bool quitter = false;
@@ -980,12 +941,12 @@ void reglerCanal() {
     }
     if (digitalRead(BtnAvD) == 0) {
       appliquerCanalWifi(wifiChannel);
-      sauvegarderCanal(wifiChannel); // devient le canal par defaut au prochain demarrage
+      sauvegarderCanal(wifiChannel);
       quitter = true;
     }
     delay(20);
   }
-  while (digitalRead(BtnAvD) == 0) delay(20); // anti-rebond
+  while (digitalRead(BtnAvD) == 0) delay(20);
 }
 
 void afficherReglageCanal() {
@@ -1017,7 +978,6 @@ void afficherReglageCanal() {
   dessinerPointStatut(etatLiaison);
 }
 
-// ---- Reglage de la longue portee ----
 void reglerLonguePortee() {
   afficherReglageLonguePortee();
   bool quitter = false;
@@ -1029,12 +989,12 @@ void reglerLonguePortee() {
     }
     if (digitalRead(BtnAvD) == 0) {
       appliquerLonguePortee(wifiLongRange);
-      sauvegarderLonguePortee(wifiLongRange); // devient le mode LR par defaut au prochain demarrage
+      sauvegarderLonguePortee(wifiLongRange);
       quitter = true;
     }
     delay(20);
   }
-  while (digitalRead(BtnAvD) == 0) delay(20); // anti-rebond
+  while (digitalRead(BtnAvD) == 0) delay(20);
 }
 
 void afficherReglageLonguePortee() {
@@ -1070,7 +1030,6 @@ void afficherReglageLonguePortee() {
   dessinerPointStatut(etatLiaison);
 }
 
-// ---- Reglage de la puissance TX ----
 void reglerPuissance() {
   afficherReglagePuissance();
   bool quitter = false;
@@ -1089,12 +1048,12 @@ void reglerPuissance() {
     }
     if (digitalRead(BtnAvD) == 0) {
       appliquerPuissanceWifi(indexPuissance);
-      sauvegarderPuissance(indexPuissance); // devient la puissance par defaut au prochain demarrage
+      sauvegarderPuissance(indexPuissance);
       quitter = true;
     }
     delay(20);
   }
-  while (digitalRead(BtnAvD) == 0) delay(20); // anti-rebond
+  while (digitalRead(BtnAvD) == 0) delay(20);
 }
 
 void afficherReglagePuissance() {
@@ -1126,7 +1085,6 @@ void afficherReglagePuissance() {
   dessinerPointStatut(etatLiaison);
 }
 
-// ---- Reglage de l'adresse MAC de destination (clavier hexadecimal virtuel) ----
 const char* CLAVIER_TOUCHES[] = {
   "0", "1", "2", "3",
   "4", "5", "6", "7",
@@ -1144,15 +1102,14 @@ const int16_t CLAVIER_CASE_H = 13;
 const int16_t CLAVIER_ESPACE = 3;
 
 void reglerAdresse() {
-  // Buffer de 12 caracteres hexadecimaux (2 par octet, 6 octets), initialise
-  // avec l'adresse actuellement configuree.
+// avec l'adresse actuellement configuree.
   char buffer[12];
   for (int i = 0; i < 6; i++) {
     sprintf(&buffer[i * 2], "%02X", adresseBroadcast[i]);
   }
 
-  int curseurTexte = 0;   // prochaine position d'ecriture dans le buffer (0 a 11)
-  int curseurTouche = 0;  // touche selectionnee sur le clavier (0 a NB_TOUCHES_CLAVIER-1)
+  int curseurTexte = 0;
+  int curseurTouche = 0;
 
   afficherReglageAdresse(buffer, curseurTexte, curseurTouche);
 
@@ -1185,14 +1142,13 @@ void reglerAdresse() {
       const char* touche = CLAVIER_TOUCHES[curseurTouche];
 
       if (strcmp(touche, "EFF") == 0) {
-        // Efface le caractere precedent et recule le curseur
+// efface le caractere precedent et recule le curseur
         if (curseurTexte > 0) {
           curseurTexte--;
           buffer[curseurTexte] = '0';
         }
       }
       else if (strcmp(touche, "OK") == 0) {
-        // Conversion du buffer hexadecimal (12 caracteres) en 6 octets, puis sauvegarde
         uint8_t nouvelleAdresse[6];
         char octetTxt[3];
         for (int i = 0; i < 6; i++) {
@@ -1202,12 +1158,11 @@ void reglerAdresse() {
           nouvelleAdresse[i] = (uint8_t)strtol(octetTxt, NULL, 16);
         }
         memcpy(adresseBroadcast, nouvelleAdresse, sizeof(adresseBroadcast));
-        sauvegarderAdresse(adresseBroadcast); // devient l'adresse par defaut au prochain demarrage
-        appliquerCanalWifi(wifiChannel); // recree le peer ESP-NOW avec la nouvelle adresse
+        sauvegarderAdresse(adresseBroadcast);
+        appliquerCanalWifi(wifiChannel);
         termine = true;
       }
       else {
-        // Ecriture d'un chiffre hexadecimal a la position courante, puis avance
         buffer[curseurTexte] = touche[0];
         if (curseurTexte < 11) curseurTexte++;
       }
@@ -1223,7 +1178,7 @@ void reglerAdresse() {
     delay(20);
   }
 
-  while (digitalRead(BtnAvD) == 0) delay(20); // anti-rebond
+  while (digitalRead(BtnAvD) == 0) delay(20);
 }
 
 void afficherReglageAdresse(const char *buffer, int curseurTexte, int curseurTouche) {
@@ -1233,8 +1188,7 @@ void afficherReglageAdresse(const char *buffer, int curseurTexte, int curseurTou
   tft.setCursor(10, 4);
   tft.println("== ADRESSE MAC ==");
 
-  // Affichage du buffer sous forme d'octets separes par ':', avec le
-  // caractere en cours d'edition surligne
+// caractere en cours d'edition surligne
   int x = 8;
   int y = 20;
   for (int i = 0; i < 6; i++) {
@@ -1251,7 +1205,7 @@ void afficherReglageAdresse(const char *buffer, int curseurTexte, int curseurTou
       tft.print(buffer[posBuffer]);
       x += 7;
     }
-    x += 4; // espace avant le ':'
+    x += 4;
     if (i < 5) {
       tft.setTextColor(TEXT_COLOR);
       tft.setCursor(x, y);
@@ -1260,7 +1214,7 @@ void afficherReglageAdresse(const char *buffer, int curseurTexte, int curseurTou
     }
   }
 
-  // Clavier virtuel
+// clavier virtuel
   for (int i = 0; i < NB_TOUCHES_CLAVIER; i++) {
     int col = i % CLAVIER_COLONNES;
     int row = i / CLAVIER_COLONNES;
@@ -1312,7 +1266,7 @@ void afficher_Menu(int selected, int n) {
   delay(200);
 }
 
-// ================= ÉCRAN PRINCIPAL =================
+// affichage ecran
 void drawMainScreen() {
   tft.fillScreen(BG_COLOR);
   drawRobot();
@@ -1325,37 +1279,35 @@ void drawMainScreen() {
   delay(200);
 }
 
-// ---- Robot bipède stylisé (dessiné avec des formes simples) ----
 void drawRobot() {
   int cx = ROBOT_X + ROBOT_W / 2;
 
-  // Antenne
+// antenne
   tft.drawLine(cx, ROBOT_Y, cx, ROBOT_Y + 8, ROBOT_COLOR);
   tft.fillCircle(cx, ROBOT_Y, 2, ACCENT_COLOR);
 
-  // Tête
+// tête
   tft.fillRoundRect(cx - 16, ROBOT_Y + 8, 32, 24, 4, ROBOT_COLOR);
   tft.fillCircle(cx - 7, ROBOT_Y + 20, 3, BG_COLOR);
   tft.fillCircle(cx + 7, ROBOT_Y + 20, 3, BG_COLOR);
 
-  // Corps
+// corps
   tft.fillRoundRect(cx - 20, ROBOT_Y + 34, 40, 44, 5, ROBOT_COLOR);
   tft.fillRect(cx - 10, ROBOT_Y + 46, 20, 14, ACCENT_COLOR);
 
-  // Bras
+// bras
   tft.fillRoundRect(cx - 30, ROBOT_Y + 38, 8, 28, 3, ROBOT_COLOR);
   tft.fillRoundRect(cx + 22, ROBOT_Y + 38, 8, 28, 3, ROBOT_COLOR);
 
-  // Jambes
+// jambes
   tft.fillRoundRect(cx - 16, ROBOT_Y + 78, 12, 30, 3, ROBOT_COLOR);
   tft.fillRoundRect(cx + 4,  ROBOT_Y + 78, 12, 30, 3, ROBOT_COLOR);
 
-  // Pieds
+// pieds
   tft.fillRoundRect(cx - 18, ROBOT_Y + 106, 16, 6, 2, ROBOT_COLOR);
   tft.fillRoundRect(cx + 2,  ROBOT_Y + 106, 16, 6, 2, ROBOT_COLOR);
 }
 
-// ---- Zone vitesse ----
 void drawSpeedLabel() {
   tft.setTextColor(ACCENT_COLOR);
   tft.setTextSize(1);
@@ -1366,7 +1318,7 @@ void drawSpeedLabel() {
 
 void updateSpeed(int value) {
   vitesse = value;
-  tft.fillRect(INFO_X, SPEED_Y + 14, 64, 24, BG_COLOR); // efface l'ancienne valeur
+  tft.fillRect(INFO_X, SPEED_Y + 14, 64, 24, BG_COLOR);
   tft.setTextColor(TEXT_COLOR);
   tft.setTextSize(3);
   tft.setCursor(INFO_X, SPEED_Y + 16);
@@ -1376,7 +1328,6 @@ void updateSpeed(int value) {
   tft.print("km/h");
 }
 
-// ---- Zone batterie ----
 void drawBatteryLabel() {
   tft.setTextColor(ACCENT_COLOR);
   tft.setTextSize(1);
@@ -1388,16 +1339,16 @@ void drawBatteryLabel() {
 void updateBattery(int percent) {
   batterie = constrain(percent, 0, 100);
 
-  // Efface l'ancien affichage
+// efface l'ancien affichage
   tft.fillRect(INFO_X, BATT_Y + 14, 64, 30, BG_COLOR);
 
-  // Icône de batterie (rectangle + plot)
+// icône de batterie (rectangle + plot)
   int bx = INFO_X;
   int by = BATT_Y + 16;
   int bw = 44, bh = 18;
 
   tft.drawRoundRect(bx, by, bw, bh, 2, TEXT_COLOR);
-  tft.fillRect(bx + bw, by + 4, 3, bh - 8, TEXT_COLOR); // plot +
+  tft.fillRect(bx + bw, by + 4, 3, bh - 8, TEXT_COLOR);
 
   int fillW = map(batterie, 0, 100, 0, bw - 4);
   uint16_t col = ACCENT_COLOR;

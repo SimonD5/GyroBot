@@ -1,4 +1,4 @@
-# Forwarder pour lancer directement depuis la racine
+# lance le tuner dans Outils_Tuning_PC
 import os
 import sys
 

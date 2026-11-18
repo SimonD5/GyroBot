@@ -1,32 +1,4 @@
-"""
-RobotBalance PID Tuner
-======================
-
-Interface graphique pour régler expérimentalement le PID du robot
-ESP32-C6 + MPU6050 par USB.
-
-Installation :
-    pip install pyserial matplotlib
-
-Lancement :
-    python pid_tuner.py
-
-Fonctions :
-- connexion USB et détection du port
-- réglage Kp / Ki / Kd / consigne / PWM min
-- armement / désarmement
-- affichage temps réel angle / gyro / PID / PWM / dt
-- enregistrement de chaque essai
-- analyse automatique
-- recommandations de réglage
-- historique de tous les essais
-- export session JSON + CSV
-- réimport d'une session précédente
-
-IMPORTANT :
-Le programme ne commande jamais automatiquement le robot pendant un essai.
-Il propose des gains et attend que l'utilisateur les applique et lance le test.
-"""
+# Interface pour regler le PID par liaison serie USB
 
 import csv
 import json
@@ -251,9 +223,7 @@ class PIDTuner:
 
         self.root.protocol("WM_DELETE_WINDOW", self.close)
 
-    # ---------------------------------------------------------
     # UI
-    # ---------------------------------------------------------
     def build_ui(self):
         top = ttk.Frame(self.root, padding=8)
         top.pack(fill="x")
@@ -285,9 +255,7 @@ class PIDTuner:
             side="right", padx=5
         )
 
-        # -----------------------------------------------------
         # Guide
-        # -----------------------------------------------------
         guide = ttk.LabelFrame(self.root, text="Guide de réglage", padding=8)
         guide.pack(fill="x", padx=8, pady=4)
 
@@ -315,9 +283,7 @@ class PIDTuner:
         )
         self.recommendation_label.pack(anchor="w", pady=4)
 
-        # -----------------------------------------------------
         # Contrôles PID
-        # -----------------------------------------------------
         controls = ttk.LabelFrame(self.root, text="Réglages", padding=8)
         controls.pack(fill="x", padx=8, pady=4)
 
@@ -363,9 +329,7 @@ class PIDTuner:
             controls, text="STOP MOTEURS", command=self.stop
         ).pack(side="right")
 
-        # -----------------------------------------------------
         # Test roues
-        # -----------------------------------------------------
         wheel = ttk.LabelFrame(
             self.root, text="Test roues — robot désarmé", padding=5
         )
@@ -379,9 +343,7 @@ class PIDTuner:
                 command=lambda p=pwm: self.send(f"v{p}"),
             ).pack(side="left", padx=2)
 
-        # -----------------------------------------------------
         # Notebook
-        # -----------------------------------------------------
         notebook = ttk.Notebook(self.root)
         notebook.pack(fill="both", expand=True, padx=8, pady=5)
 
@@ -466,9 +428,7 @@ class PIDTuner:
         )
         self.history_advice.pack(fill="x", padx=5, pady=8)
 
-    # ---------------------------------------------------------
     # Serial
-    # ---------------------------------------------------------
     def refresh_ports(self):
         ports = [p.device for p in list_ports.comports()]
         self.port_combo["values"] = ports
@@ -568,9 +528,7 @@ class PIDTuner:
         except Exception as e:
             messagebox.showerror("USB", str(e))
 
-    # ---------------------------------------------------------
     # Paramètres
-    # ---------------------------------------------------------
     def read_params_from_ui(self):
         try:
             return {
@@ -636,9 +594,7 @@ class PIDTuner:
         self.send("q")
         self.arm_button.config(text="ARMER")
 
-    # ---------------------------------------------------------
     # Données
-    # ---------------------------------------------------------
     def parse_data(self, line):
         if not line.startswith("DATA,"):
             return
@@ -671,7 +627,6 @@ class PIDTuner:
 
         self.current_data.append(x)
 
-        # Limite uniquement l'affichage, pas les données exportées.
         if len(self.current_data) > 20000:
             self.current_data = self.current_data[-20000:]
 
@@ -756,9 +711,7 @@ class PIDTuner:
         self.current_trial_start = None
         self.update_guide()
 
-    # ---------------------------------------------------------
     # Analyse / guide
-    # ---------------------------------------------------------
     def update_guide(self):
         n = len(self.trials)
 
@@ -887,9 +840,7 @@ class PIDTuner:
 
         self.canvas.draw_idle()
 
-    # ---------------------------------------------------------
     # Export / import
-    # ---------------------------------------------------------
     def export_session(self):
         if not self.trials:
             messagebox.showinfo(
@@ -1007,11 +958,8 @@ class PIDTuner:
         except Exception as e:
             messagebox.showerror("Import", str(e))
 
-    # ---------------------------------------------------------
     # Update loop
-    # ---------------------------------------------------------
     def update_gui(self):
-        # Traiter les lignes reçues.
         while True:
             try:
                 line = self.rx_queue.get_nowait()

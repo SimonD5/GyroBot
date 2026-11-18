@@ -1,68 +1,51 @@
-// ============================================================
-// RobotBalance V5 - Telecommande ESP-NOW Autonome
-// ESP32-C6 + MPU6050 GY-521 + Driver TB6612FNG
-//
-// 100% AUTONOME (Pas de WiFi AP, pas de serveur TCP, pas de GUI Python)
-// - Reglage : modifier facilement les parametres ci-dessous et reteleverser
-// - Armement : automatique quand le robot est tenu droit (~300 ms)
-// - Pilotage : 1 joystick (droit par defaut)
-//     Axe Y : Avancer / Reculer (inclinaison de consigne progressive)
-//     Axe X : Tourner Gauche / Droite (differentiel moteur)
-// - Securite : arret automatique sur chute (> 18 deg)
-//              arret d'urgence possible via bouton ArD ou clic joystick
-// ============================================================
+// Robot balance v5 autonome (telecommande ESP-NOW)
 
 #include <Wire.h>
 #include <esp_now.h>
 #include <WiFi.h>
 #include <esp_wifi.h>
 
-// [==============================================================]
-// [               SECTION REGLAGES -- A MODIFIER                 ]
-// [==============================================================]
 
-// ---- PID Boucle 1 : Angle (stabilisation) ----
-#define CONF_Kp          16.0f   // Gain proportionnel (15 - 20)
-#define CONF_Ki           1.0f   // Gain integral (0.5 - 2.0)
-#define CONF_Kd           0.30f  // Gain derive (0.20 - 0.40)
-#define CONF_CONSIGNE     0.5f   // Angle d'equilibre naturel en degres (ajuster si le robot penche)
-#define CONF_PWM_MIN     18      // PWM min pour vaincre le frottement statique (16 - 20)
+// boucle pid angle
+#define CONF_Kp          16.0f
+#define CONF_Ki           1.0f
+#define CONF_Kd           0.30f
+#define CONF_CONSIGNE     0.5f
+#define CONF_PWM_MIN     18
 
-// ---- PID Boucle 2 : Correction de derive lente ----
-#define CONF_Kp2          0.25f  // Gain anti-derive (0.15 - 0.35) -- 0 = desactive
-#define CONF_Ki2          0.0f   // Integrale boucle 2 (garder a 0.0)
-#define CONF_DEADBAND     2.0f   // Zone morte anti-tremblement boucle 2 (unites PWM)
+// boucle vitesse cascade
+#define CONF_Kp2          0.25f
+#define CONF_Ki2          0.0f
+#define CONF_DEADBAND     2.0f
 
-// ---- Pilotage par Joystick ----
-#define CONF_USE_JOYSTICK_DROIT true // true = Joystick Droit, false = Joystick Gauche
+// joystick
+#define CONF_USE_JOYSTICK_DROIT true
 
-// Axe Y (Avancer / Reculer)
-#define CONF_JOY_VITESSE_MAX   1.5f  // Inclinaison max ajoutee a la consigne (degres) : 1.2 a 1.8 max pour eviter la chute
-#define CONF_JOY_ZONE_MORTE_Y  1.0f  // Seuil de zone morte au centre (-15 a +15)
-#define CONF_JOY_Y_SIGN       -1.0f  // -1.0f pour avancer en poussant vers l'avant, +1.0f si inverse
+// axe y (avancer / reculer)
+#define CONF_JOY_VITESSE_MAX   1.5f
+#define CONF_JOY_ZONE_MORTE_Y  1.0f
+#define CONF_JOY_Y_SIGN       -1.0f
 
-// Axe X (Tourner Gauche / Droite)
-#define CONF_TURN_GAIN         1.2f  // Sensibilite de rotation
-#define CONF_JOY_ZONE_MORTE_X  1.0f  // Seuil de zone morte au centre (-15 a +15)
-#define CONF_TURN_SIGN         1.0f  // +1.0 ou -1.0 si besoin d'inverser gauche/droite
+// axe x (tourner gauche / droite)
+#define CONF_TURN_GAIN         1.2f
+#define CONF_JOY_ZONE_MORTE_X  1.0f
+#define CONF_TURN_SIGN         1.0f
 
-// ---- Gyroscope / MPU6050 ----
-#define CONF_GYRO_SIGN       -1.0f  // -1.0f (inverser a +1.0f si le robot s'emballe immediatement)
+// mpu6050
+#define CONF_GYRO_SIGN       -1.0f
 
-// ---- Securite et Armement ----
-#define CONF_ANGLE_CHUTE     18.0f  // Angle absolu en degres declenchant la coupure moteur
-#define CONF_ANGLE_REPRISE    2.0f  // Ecart max a la consigne pour autoriser l'armement (degres)
-#define CONF_DEBOUNCE_ARME_MS 300   // Temps stable a la verticale requis pour s'armer (ms)
+// securite
+#define CONF_ANGLE_CHUTE     18.0f
+#define CONF_ANGLE_REPRISE    2.0f
+#define CONF_DEBOUNCE_ARME_MS 300
 
-// ---- Liaison ESP-NOW & WiFi ----
-#define CONF_MAC_TELE        {0x44, 0xB1, 0x76, 0xCD, 0xD1, 0x38} // MAC de telecommandev7
-#define CONF_WIFI_CHANNEL    1      // Doit correspondre au canal de la telecommande (1 par defaut)
-#define CONF_WIFI_LONG_RANGE true   // Activer le mode Long Range (true = defaut de telecommandev7)
-
-// [==================== FIN SECTION REGLAGES ====================]
+// com sans fil
+#define CONF_MAC_TELE        {0x44, 0xB1, 0x76, 0xCD, 0xD1, 0x38}
+#define CONF_WIFI_CHANNEL    1
+#define CONF_WIFI_LONG_RANGE true
 
 
-// ---------------- Broches materielles (ESP32-C6) ----------------
+
 #define SDA_PIN   2
 #define SCL_PIN   3
 #define PWMA     11
@@ -73,24 +56,21 @@
 #define BIN2     20
 #define STBY     22
 
-// ---------------- Constantes materielles ----------------
 const int PWM_FREQ      = 20000;
 const int PWM_RES       = 8;
 const int PWM_MAX       = 200;
 const int SIGN_MOTEUR_A =  1;
 const int SIGN_MOTEUR_B = -1;
 
-// ---------------- Constantes algorithme ----------------
 const float ALPHA_V        = 0.03f;
 const float ALPHA_D        = 0.40f;
 const float ALPHA          = 0.98f;
-const float ALPHA_JOY      = 0.04f; // Lissage progressif de la consigne joystick (~120 ms)
+const float ALPHA_JOY      = 0.04f;
 const float I_MAX          = 80.0f;
 const float ZONE_RAMPE     = 30.0f;
 const float ANGLE_CORR_MAX = 3.0f;
-const uint32_t PERIODE_US  = 5000; // 200 Hz
+const uint32_t PERIODE_US  = 5000;
 
-// ---------------- Variables de regulation ----------------
 float Kp = CONF_Kp, Ki = CONF_Ki, Kd = CONF_Kd;
 float consigne = CONF_CONSIGNE;
 int   pwmMin   = CONF_PWM_MIN;
@@ -103,13 +83,12 @@ float rateF = 0, angleAcc = 0, angle = 0, rate = 0;
 float integrale = 0, sortie = 0;
 float gyroBias  = 0;
 
-// Commandes issues du joystick
+// commandes issues du joystick
 float correctionJoyCible = 0.0f;
-float correctionJoy      = 0.0f; // Valeur lissee appliquee au PID
+float correctionJoy      = 0.0f;
 float turnOffsetCible    = 0.0f;
 float turnOffset         = 0.0f;
 
-// ---------------- Machine d'etats ----------------
 enum Etat : uint8_t { ETAT_ATTENTE, ETAT_ACTIF };
 Etat etat = ETAT_ATTENTE;
 
@@ -117,9 +96,9 @@ uint32_t tPrec = 0, tDernier = 0;
 uint32_t tDernierEspNow = 0;
 const uint32_t ESPNOW_TIMEOUT_MS = 500;
 int compteurDebout = 0;
-const int COMPTEUR_DEBOUT_CIBLE = CONF_DEBOUNCE_ARME_MS / 5; // e.g. 300 ms / 5 ms = 60 cycles
+const int COMPTEUR_DEBOUT_CIBLE = CONF_DEBOUNCE_ARME_MS / 5;
 
-// ---------------- ESP-NOW ----------------
+// com sans fil
 uint8_t macTelecommande[6] = CONF_MAC_TELE;
 
 typedef struct {
@@ -127,14 +106,14 @@ typedef struct {
   int I;
   int D;
   int G;
-  int EBtnAvD; // 1=relache, 0=appuye
+  int EBtnAvD;
   int EBtnAvG;
   int EBtnAvH;
   int EBtnArD;
   int EBtnArG;
-  int JGX;     // -15 a +15
+  int JGX;
   int JGY;
-  int JGBtn;   // 1=relache, 0=appuye
+  int JGBtn;
   int JDX;
   int JDY;
   int JDBtn;
@@ -144,9 +123,7 @@ volatile bool newDataEspNow = false;
 MessageTelecommande msgRecu, msgSafe;
 
 
-// ============================================================
-//                    COMMANDE DES MOTEURS
-// ============================================================
+// commande des moteurs
 void moteur(int pwmPin, int in1, int in2, int v) {
   v = constrain(v, -PWM_MAX, PWM_MAX);
   if (v > 0)       { digitalWrite(in1, HIGH); digitalWrite(in2, LOW); }
@@ -163,9 +140,7 @@ void commandeMoteurs(int cmd, int turn = 0) {
 }
 
 
-// ============================================================
-//                    CAPTEUR MPU-6050
-// ============================================================
+// capteur mpu-6050
 void mpuEcrire(uint8_t reg, uint8_t val) {
   Wire.beginTransmission(0x68); Wire.write(reg); Wire.write(val); Wire.endTransmission();
 }
@@ -177,7 +152,7 @@ bool mpuLire(float &accAngle, float &gyroRate) {
   int16_t ax = (Wire.read() << 8) | Wire.read();
   int16_t ay = (Wire.read() << 8) | Wire.read();
   int16_t az = (Wire.read() << 8) | Wire.read();
-  Wire.read(); Wire.read(); // temperature
+  Wire.read(); Wire.read();
   int16_t gx = (Wire.read() << 8) | Wire.read();
   Wire.read(); Wire.read(); Wire.read(); Wire.read();
   (void)ax;
@@ -187,10 +162,10 @@ bool mpuLire(float &accAngle, float &gyroRate) {
 }
 
 void mpuInit() {
-  mpuEcrire(0x6B, 0x00); // Reveil MPU
-  mpuEcrire(0x1A, 0x03); // DLPF ~42 Hz
-  mpuEcrire(0x1B, 0x08); // Gyro +/- 500 deg/s
-  mpuEcrire(0x1C, 0x00); // Acc +/- 2g
+  mpuEcrire(0x6B, 0x00);
+  mpuEcrire(0x1A, 0x03);
+  mpuEcrire(0x1B, 0x08);
+  mpuEcrire(0x1C, 0x00);
 }
 
 void calibrationGyro() {
@@ -206,9 +181,7 @@ void calibrationGyro() {
 }
 
 
-// ============================================================
-//                    CALLBACK RECEPTION ESP-NOW
-// ============================================================
+// callback reception esp-now
 void IRAM_ATTR onDataRecv(const esp_now_recv_info_t* info,
                           const uint8_t* data, int len) {
   if (len == (int)sizeof(MessageTelecommande)) {
@@ -218,9 +191,7 @@ void IRAM_ATTR onDataRecv(const esp_now_recv_info_t* info,
 }
 
 
-// ============================================================
-//                    INITIALISATION (SETUP)
-// ============================================================
+// initialisation (setup)
 void setup() {
   Serial.begin(115200);
   delay(500);
@@ -228,7 +199,7 @@ void setup() {
   Serial.println("=== RobotBalance V5 (ESP-NOW Autonome) ===");
   Serial.println("=========================================");
 
-  // Broches moteurs
+// broches moteurs
   pinMode(AIN1, OUTPUT); pinMode(AIN2, OUTPUT);
   pinMode(BIN1, OUTPUT); pinMode(BIN2, OUTPUT);
   pinMode(STBY, OUTPUT);
@@ -237,7 +208,7 @@ void setup() {
   commandeMoteurs(0);
   digitalWrite(STBY, HIGH);
 
-  // I2C et Capteur IMU
+// i2c et capteur imu
   Wire.begin(SDA_PIN, SCL_PIN);
   Wire.setClock(400000);
   mpuInit();
@@ -247,12 +218,12 @@ void setup() {
   float a, g;
   if (mpuLire(a, g)) angle = a;
 
-  // WiFi en mode Station pour ESP-NOW
+// wifi
   WiFi.mode(WIFI_STA);
   WiFi.disconnect();
   esp_wifi_set_channel(CONF_WIFI_CHANNEL, WIFI_SECOND_CHAN_NONE);
 
-  // Affichage de la MAC du robot pour la telecommande
+// affichage de la mac du robot pour la telecommande
   uint8_t macRobot[6];
   esp_wifi_get_mac(WIFI_IF_STA, macRobot);
   Serial.println("\n----------------------------------------------------");
@@ -266,7 +237,7 @@ void setup() {
   } else {
     esp_now_register_recv_cb(onDataRecv);
 
-    // Activer Long Range si configure (protocole LR Espressif)
+// activer long range si configure (protocole lr espressif)
     if (CONF_WIFI_LONG_RANGE) {
       uint8_t protocole = WIFI_PROTOCOL_11B | WIFI_PROTOCOL_11G | WIFI_PROTOCOL_11N | WIFI_PROTOCOL_LR;
       esp_wifi_set_protocol(WIFI_IF_STA, protocole);
@@ -274,7 +245,6 @@ void setup() {
       Serial.println("ESP-NOW : Mode Longue Portee (LR) active (250 kbps)");
     }
 
-    // Enregistrer la telecommande pour que l'accuse de reception (ACK) fonctionne
     esp_now_peer_info_t peer = {};
     memcpy(peer.peer_addr, macTelecommande, 6);
     peer.channel = CONF_WIFI_CHANNEL;
@@ -303,9 +273,7 @@ void setup() {
 }
 
 
-// ============================================================
-//                    DECODAGE ESP-NOW & JOYSTICK
-// ============================================================
+// decodage esp-now & joystick
 void traiterEspNow() {
   noInterrupts();
   memcpy(&msgSafe, (const void*)&msgRecu, sizeof(MessageTelecommande));
@@ -314,12 +282,12 @@ void traiterEspNow() {
 
   tDernierEspNow = millis();
 
-  // Choix du joystick (droit ou gauche)
+// choix du joystick (droit ou gauche)
   int valJoyX = CONF_USE_JOYSTICK_DROIT ? msgSafe.JDX : msgSafe.JGX;
   int valJoyY = CONF_USE_JOYSTICK_DROIT ? msgSafe.JDY : msgSafe.JGY;
   int btnJoy  = CONF_USE_JOYSTICK_DROIT ? msgSafe.JDBtn : msgSafe.JGBtn;
 
-  // 1) Axe Y : Avancer / Reculer (-15 a +15)
+// 1) axe y : avancer / reculer (-15 a +15)
   float jdy = (float)valJoyY;
   if (fabs(jdy) <= CONF_JOY_ZONE_MORTE_Y) {
     correctionJoyCible = 0.0f;
@@ -327,11 +295,10 @@ void traiterEspNow() {
     float norm = (jdy > 0)
       ? (jdy - CONF_JOY_ZONE_MORTE_Y) / (15.0f - CONF_JOY_ZONE_MORTE_Y)
       : (jdy + CONF_JOY_ZONE_MORTE_Y) / (15.0f - CONF_JOY_ZONE_MORTE_Y);
-    // norm avec CONF_JOY_Y_SIGN applique : oriente la consigne vers l'avant ou l'arriere
     correctionJoyCible = norm * CONF_JOY_VITESSE_MAX * CONF_JOY_Y_SIGN;
   }
 
-  // 2) Axe X : Tourner Gauche / Droite (-15 a +15)
+// 2) axe x : tourner gauche / droite (-15 a +15)
   float jdx = (float)valJoyX;
   if (fabs(jdx) <= CONF_JOY_ZONE_MORTE_X) {
     turnOffsetCible = 0.0f;
@@ -339,11 +306,10 @@ void traiterEspNow() {
     float norm = (jdx > 0)
       ? (jdx - CONF_JOY_ZONE_MORTE_X) / (15.0f - CONF_JOY_ZONE_MORTE_X)
       : (jdx + CONF_JOY_ZONE_MORTE_X) / (15.0f - CONF_JOY_ZONE_MORTE_X);
-    // Ecart PWM proportionnel au joystick
+// ecart pwm proportionnel au joystick
     turnOffsetCible = norm * CONF_TURN_GAIN * (float)pwmMin * CONF_TURN_SIGN;
   }
 
-  // 3) Arret d'urgence manuel : Bouton Arriere Droit OU Clic sur Joystick (0 = appuye)
   if ((msgSafe.EBtnArD == 0 || btnJoy == 0) && etat == ETAT_ACTIF) {
     commandeMoteurs(0);
     etat = ETAT_ATTENTE;
@@ -353,22 +319,19 @@ void traiterEspNow() {
 }
 
 
-// ============================================================
-//                    BOUCLE PRINCIPALE (LOOP)
-// ============================================================
+// boucle principale (loop)
 void loop() {
-  // Traitement ESP-NOW
+// traitement esp-now
   if (newDataEspNow) {
     traiterEspNow();
   }
 
-  // Failsafe liaison : si aucun paquet recu depuis > 500 ms, remise au neutre du joystick
   if (millis() - tDernierEspNow > ESPNOW_TIMEOUT_MS) {
     correctionJoyCible = 0.0f;
     turnOffsetCible    = 0.0f;
   }
 
-  // Cadencement strict a 200 Hz (5000 us)
+// cadencement strict a 200 hz (5000 us)
   uint32_t now = micros();
   if ((uint32_t)(now - tPrec) < PERIODE_US) return;
 
@@ -379,11 +342,10 @@ void loop() {
 
   float dt = ((dus > 20000UL) ? 20000UL : dus) / 1000000.0f;
 
-  // Lissage progressif du joystick (filtre passe-bas : evite les a-coups et le decrochage)
   correctionJoy += ALPHA_JOY * (correctionJoyCible - correctionJoy);
   turnOffset    += ALPHA_JOY * (turnOffsetCible - turnOffset);
 
-  // Lecture de la centrale inertielle
+// lecture de la centrale inertielle
   float a, gr;
   if (mpuLire(a, gr)) {
     rate     = gr - gyroBias;
@@ -392,10 +354,9 @@ void loop() {
   rateF = ALPHA_D * rate + (1.0f - ALPHA_D) * rateF;
   angle = ALPHA * (angle + rate * dt) + (1.0f - ALPHA) * angleAcc;
 
-  // ---------------- Machine d'etats ----------------
   switch (etat) {
 
-    // -- ETAT ATTENTE : Moteurs coupes, armement automatique --
+// armement
     case ETAT_ATTENTE:
       commandeMoteurs(0);
       integrale          = 0;
@@ -408,7 +369,7 @@ void loop() {
       turnOffsetCible    = 0;
       turnOffset         = 0;
 
-      // Condition d'armement : proche de la consigne et loin de l'angle de chute
+// armement
       if (fabs(angle - consigne) < CONF_ANGLE_REPRISE && fabs(angle) < CONF_ANGLE_CHUTE) {
         compteurDebout++;
         if (compteurDebout >= COMPTEUR_DEBOUT_CIBLE) {
@@ -422,9 +383,9 @@ void loop() {
       }
       break;
 
-    // -- ETAT ACTIF : Asservissement PID + Conduite Joystick --
+// -- etat actif : asservissement pid + conduite joystick --
     case ETAT_ACTIF:
-      // Securite chute immediate
+// securite chute immediate
       if (fabs(angle) > CONF_ANGLE_CHUTE) {
         commandeMoteurs(0);
         etat = ETAT_ATTENTE;
@@ -438,10 +399,8 @@ void loop() {
         break;
       }
 
-      // Boucle 2 : Correction de derive lente avec deadband
-      // Active uniquement lorsque le joystick est proche du neutre pour ne pas lutter contre le pilote
+// boucle 2 : correction de derive lente avec deadband
       if (fabs(correctionJoyCible) > 0.05f) {
-        // En translation pilotee : on reinitialise la derive pour eviter le recul au lacher de stick
         vitesseEstimee  = 0.0f;
         correctionAngle = 0.0f;
       } else {
@@ -455,27 +414,26 @@ void loop() {
         correctionAngle = constrain(Kp2 * vActive, -ANGLE_CORR_MAX, ANGLE_CORR_MAX);
       }
 
-      // Consigne finale = Point d'equilibre - Anti-derive + Joystick Y lissé
       consigneActive = constrain(
           consigne - correctionAngle + correctionJoy,
           consigne - ANGLE_CORR_MAX - CONF_JOY_VITESSE_MAX,
           consigne + ANGLE_CORR_MAX + CONF_JOY_VITESSE_MAX
       );
 
-      // Boucle 1 : PID de stabilisation sur l'angle
+// boucle 1 : pid de stabilisation sur l'angle
       float erreur = angle - consigneActive;
       integrale += Ki * erreur * dt;
       integrale  = constrain(integrale, -I_MAX, I_MAX);
       sortie     = Kp * erreur + integrale + Kd * rateF;
       sortie     = constrain(sortie, -PWM_MAX, PWM_MAX);
 
-      // Rampe de demarrage pour vaincre le frottement statique
+// rampe de demarrage pour vaincre le frottement statique
       float absS   = fabs(sortie);
       float offset = pwmMin * min(absS / ZONE_RAMPE, 1.0f);
       int   cmd    = (int)constrain(absS + offset, 0.0f, (float)PWM_MAX);
       if (sortie < 0) cmd = -cmd;
 
-      // Joystick X : differentiel de virage
+// joystick x : differentiel de virage
       int turn = (int)constrain(turnOffset, -(float)PWM_MAX, (float)PWM_MAX);
 
       commandeMoteurs(cmd, turn);

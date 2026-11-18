@@ -1,27 +1,10 @@
-// ============================================================
-// RobotBalance - Banc d'Essais Relevage Automatique (Wi-Fi)
-// ESP32-C6 + MPU6050 GY-521 + TB6612FNG
-//
-// OBJECTIF :
-//   Tester et optimiser le redressement automatique du robot
-//   depuis sa position de repos au sol (+/-20 deg) jusqu'a la
-//   verticale, suivi de 10 secondes de maintien en equilibre stable.
-//
-// PHASES DU RELEVAGE :
-//   1. KICK     : Impulsion franche de vitesse des roues (PWM Kick, Duree Kick)
-//   2. CAPTURE  : Arrivee a l'Angle Capture -> freinage Kd boost
-//   3. SETTLE   : Gel de la boucle 2 pendant SETTLE_MS : la boucle 1 seule
-//                  stabilise le robot sans interference de la correction derive
-//   4. EQUILIBRE: Maintien en double boucle cascade pendant 10 secondes.
-//
-// LIMITES STRICTES : PWM_MAX = 200 (Protection moteurs N20)
-// RESEAU : SoftAP "RobotPID", mot de passe "robot1234", IP 192.168.4.1:3333
-// ============================================================
+// Banc de reglages wifi pour le relevage automatique
+// RobotPID / robot1234 sur port 3333
 
 #include <Wire.h>
 #include <WiFi.h>
 
-// ---------------- Réseau Wi-Fi ----------------
+// com sans fil
 const char*    AP_SSID    = "RobotPID";
 const char*    AP_PASS    = "robot1234";
 const uint8_t  AP_CHANNEL = 1;
@@ -30,7 +13,6 @@ const uint16_t TCP_PORT   = 3333;
 WiFiServer serveur(TCP_PORT);
 WiFiClient client;
 
-// ---------------- Broches matérielles (ESP32-C6) ----------------
 #define SDA_PIN 2
 #define SCL_PIN 3
 #define PWMA 11
@@ -41,25 +23,23 @@ WiFiClient client;
 #define BIN2 20
 #define STBY 22
 
-// ---------------- Constantes matérielles ----------------
 const int PWM_FREQ = 20000;
 const int PWM_RES  = 8;
-const int PWM_MAX  = 200; // LIMITE ABSOLUE : NE JAMAIS DEPASSER
+const int PWM_MAX  = 200;
 
 const int SIGN_MOTEUR_A =  1;
 const int SIGN_MOTEUR_B = -1;
 
-// ---------------- Paramètres Relevage (modifiables par Wi-Fi) ----------------
-int   pwmKick           = 180;   // Puissance impulsion kick (100 a 200 MAX)
-int   dureeKickMs       = 350;   // Duree max du kick en ms (angle capture pris avant en general)
-float angleCapture      = 2.0f;  // Angle d'approche pour couper le kick et freiner (deg)
-float kdBoost           = 2.5f;  // Multiplicateur Kd pour freiner l'arrivee au sommet
-float anglePoseMin      = 14.0f; // Angle min pour considerer le robot pose au sol
-float anglePoseMax      = 28.0f; // Angle max pour considerer le robot pose au sol
-float dureeEquilibreS   = 10.0f; // Duree de maintien d'equilibre visee (secondes)
-int   settleMs          = 600;   // ms de gel de la boucle 2 apres capture (evite derive parasite)
+// relevage
+int   pwmKick           = 180;
+int   dureeKickMs       = 350;
+float angleCapture      = 2.0f;
+float kdBoost           = 2.5f;
+float anglePoseMin      = 14.0f;
+float anglePoseMax      = 28.0f;
+float dureeEquilibreS   = 10.0f;
+int   settleMs          = 600;
 
-// ---------------- PID Stabilisation (Boucle 1 & 2) ----------------
 float Kp          = 16.0f;
 float Ki          =  1.0f;
 float Kd          =  0.30f;
@@ -76,30 +56,29 @@ const float I_MAX          = 80.0f;
 const float ZONE_RAMPE     = 30.0f;
 const float ANGLE_CORR_MAX = 3.0f;
 const float ANGLE_CHUTE_MAX= 35.0f;
-const uint32_t PERIODE_US  = 5000;  // 200 Hz
+const uint32_t PERIODE_US  = 5000;
 
-// ---------------- Tampon d'enregistrement (12 secondes = 2400 éch.) ----------------
 const uint32_t MAX_ECHANTILLONS = 2400;
 
 struct Echantillon {
   uint32_t t_ms;
-  int16_t  angle;     // 0.01 deg
-  int16_t  acc;       // 0.01 deg
-  int16_t  gyro;      // 0.1 deg/s
-  int16_t  rateF;     // 0.1 deg/s
-  int16_t  pid;       // 0.1
-  int16_t  pwm;       // commande moteurs
-  int16_t  target;    // 0.01 deg consigne active
-  int16_t  spd;       // 0.1 vitesse estimee
-  uint16_t dt_us;     // duree cycle
-  uint8_t  phase;     // 0=KICK, 1=CAPTURE, 2=SETTLE, 3=EQUILIBRE
+  int16_t  angle;
+  int16_t  acc;
+  int16_t  gyro;
+  int16_t  rateF;
+  int16_t  pid;
+  int16_t  pwm;
+  int16_t  target;
+  int16_t  spd;
+  uint16_t dt_us;
+  uint8_t  phase;
 };
 
 Echantillon* tampon = nullptr;
 uint32_t capacite = 0;
 uint32_t nEch = 0;
 
-// ---------------- MPU6050 ----------------
+// mpu6050
 const uint8_t MPU_ADDR = 0x68;
 float gyroBias = 0;
 float gyroSign = -1.0f;
@@ -108,14 +87,13 @@ float rateF = 0, angleAcc = 0, angle = 0, rate = 0;
 float integrale = 0, sortie = 0;
 float vitesseEstimee = 0, correctionAngle = 0, consigneActive = 0.5f;
 
-// ---------------- Machine d'états ----------------
 enum EtatRobot : uint8_t {
-  ETAT_COMMS,          // Wi-Fi ouvert, moteurs coupes, parametrage
-  ETAT_ARME_ATTENTE,   // Arme : attend que le robot soit pose a ~20 deg au sol
-  ETAT_KICK,           // Phase 1 : Impulsion violente de redressement
-  ETAT_CAPTURE,        // Phase 2 : Coupure kick, freinage Kd Boost
-  ETAT_SETTLE,         // Phase 3 : Gel boucle 2 le temps que le robot se calme
-  ETAT_EQUILIBRE       // Phase 4 : Asservissement PID d'equilibre (10s)
+  ETAT_COMMS,
+  ETAT_ARME_ATTENTE,
+  ETAT_KICK,
+  ETAT_CAPTURE,
+  ETAT_SETTLE,
+  ETAT_EQUILIBRE
 };
 EtatRobot etat = ETAT_COMMS;
 
@@ -127,7 +105,7 @@ uint32_t tDebutCaptureMs = 0;
 uint32_t tDebutSettleMs = 0;
 int sensKick = 1;
 int compteurPoseStable = 0;
-const int SEUIL_POSE_STABLE = 80; // 80 * 5ms = 400 ms stable au sol
+const int SEUIL_POSE_STABLE = 80;
 
 uint32_t essaiNum = 0;
 bool trialPret = false;
@@ -140,9 +118,7 @@ float essaiKdBoost    = 2.5f;
 int   essaiSettleMs   = 600;
 
 
-// ============================================================
-//                    COMMANDE DES MOTEURS
-// ============================================================
+// commande des moteurs
 void moteur(int pwmPin, int in1, int in2, int v) {
   v = constrain(v, -PWM_MAX, PWM_MAX);
   if (v > 0)       { digitalWrite(in1, HIGH); digitalWrite(in2, LOW); }
@@ -158,9 +134,7 @@ void commandeMoteurs(int cmd) {
 }
 
 
-// ============================================================
-//                    CAPTEUR MPU-6050
-// ============================================================
+// capteur mpu-6050
 void mpuEcrire(uint8_t reg, uint8_t val) {
   Wire.beginTransmission(MPU_ADDR); Wire.write(reg); Wire.write(val); Wire.endTransmission();
 }
@@ -201,9 +175,7 @@ void calibrationGyro() {
 }
 
 
-// ============================================================
-//                    GESTION DU TAMPON
-// ============================================================
+// gestion du tampon
 static inline int16_t q16(float v, float ech) {
   float x = v * ech;
   if (x >  32767.0f) return  32767;
@@ -228,9 +200,7 @@ void enregistrer(int cmd, float sortiePid, uint16_t dus, uint8_t phase) {
 }
 
 
-// ============================================================
-//                    COMMUNICATIONS TCP
-// ============================================================
+// communications tcp
 void envoyerParametres() {
   if (!client || !client.connected()) return;
   client.printf("PARAM,Kp=%.2f,Ki=%.2f,Kd=%.2f,consigne=%.2f,pwmMin=%d,"
@@ -250,7 +220,7 @@ void demarrerRelevage() {
   sensKick        = (angle > 0) ? 1 : -1;
   etat            = ETAT_KICK;
   integrale       = 0;
-  vitesseEstimee  = 0;   // Propre à zéro en debut de relevage
+  vitesseEstimee  = 0;
   correctionAngle = 0;
   consigneActive  = consigne;
   sortie          = 0;
@@ -330,7 +300,7 @@ void traiterCommandesReseau() {
       case 'c': angleCapture = constrain(val, 0.5f, 15.0f); break;
       case 'f': kdBoost = constrain(val, 1.0f, 4.0f); break;
       case 'h': dureeEquilibreS = constrain(val, 2.0f, 20.0f); break;
-      case 'n': settleMs = constrain((int)val, 0, 2000); break; // n = settle duration
+      case 'n': settleMs = constrain((int)val, 0, 2000); break;
 
       case 'a':
         if (val == 1.0f) {
@@ -344,7 +314,7 @@ void traiterCommandesReseau() {
         }
         break;
 
-      case 'x': // Déclenchement forcé immédiat
+      case 'x':
         demarrerRelevage();
         break;
 
@@ -360,9 +330,7 @@ void traiterCommandesReseau() {
 }
 
 
-// ============================================================
-//                    INITIALISATION (SETUP)
-// ============================================================
+// initialisation (setup)
 void setup() {
   Serial.begin(115200);
   delay(500);
@@ -412,11 +380,9 @@ void setup() {
 }
 
 
-// ============================================================
-//                    BOUCLE PRINCIPALE (LOOP)
-// ============================================================
+// boucle principale (loop)
 void loop() {
-  // Gestion connexion client TCP
+// gestion connexion client tcp
   if (etat == ETAT_COMMS) {
     if (!client || !client.connected()) {
       WiFiClient nouveau = serveur.accept();
@@ -432,7 +398,7 @@ void loop() {
     }
   }
 
-  // Boucle temps réel 200 Hz
+// boucle temps réel 200 hz
   uint32_t now = micros();
   if ((uint32_t)(now - tPrec) < PERIODE_US) return;
 
@@ -453,14 +419,14 @@ void loop() {
 
   switch (etat) {
 
-    // ── 0. COMMS ──────────────────────────────────────────────
+// ── 0. comms ──────────────────────────────────────────────
     case ETAT_COMMS:
       commandeMoteurs(0);
       integrale = 0; vitesseEstimee = 0; correctionAngle = 0;
       sortie = 0; consigneActive = consigne;
       break;
 
-    // ── 1. ARMÉ EN ATTENTE ─────────────────────────────────────
+// ── 1. armé en attente ─────────────────────────────────────
     case ETAT_ARME_ATTENTE:
       commandeMoteurs(0);
       integrale = 0; vitesseEstimee = 0; correctionAngle = 0; sortie = 0;
@@ -476,14 +442,14 @@ void loop() {
       }
       break;
 
-    // ── 2. PHASE KICK ──────────────────────────────────────────
+// ── 2. phase kick ──────────────────────────────────────────
     case ETAT_KICK: {
       uint32_t tEcouleKickMs = (micros() - tDebutKickUs) / 1000UL;
       int cmdKick = sensKick * pwmKick;
       commandeMoteurs(cmdKick);
       enregistrer(cmdKick, (float)cmdKick, (uint16_t)dus, 0);
 
-      // Angle capture : dépend du sens
+// angle capture : dépend du sens
       bool captureAtteinte = false;
       if (sensKick == 1 && angle <= consigne + angleCapture) captureAtteinte = true;
       if (sensKick == -1 && angle >= consigne - angleCapture) captureAtteinte = true;
@@ -492,8 +458,7 @@ void loop() {
       if (captureAtteinte || dureeDepassee) {
         etat = ETAT_CAPTURE;
         tDebutCaptureMs = millis();
-        // Remise à zéro PROPRE : l'intégrale et la vitesse estimée ne doivent pas
-        // "se souvenir" de la phase Kick
+// kick relevage
         integrale      = 0;
         vitesseEstimee = 0;
         correctionAngle= 0;
@@ -504,7 +469,7 @@ void loop() {
       break;
     }
 
-    // ── 3. PHASE CAPTURE (Freinage Kd Boost) ───────────────────
+// ── 3. phase capture (freinage kd boost) ───────────────────
     case ETAT_CAPTURE: {
       if (fabs(angle) > ANGLE_CHUTE_MAX) {
         enregistrer(0, 0, (uint16_t)dus, 1);
@@ -528,7 +493,6 @@ void loop() {
       commandeMoteurs(cmd);
       enregistrer(cmd, sortie, (uint16_t)dus, 1);
 
-      // Transition vers SETTLE : on passe dès que le robot est presque droit ET lent
       uint32_t tCapMs = millis() - tDebutCaptureMs;
       bool presque_droit = fabs(angle - consigne) < 2.0f;
       bool ralenti       = fabs(rateF) < 40.0f;
@@ -536,8 +500,7 @@ void loop() {
       if ((presque_droit && ralenti) || tCapMs >= 400) {
         etat = ETAT_SETTLE;
         tDebutSettleMs = millis();
-        // REMISE A ZERO COMPLETE de la vitesse estimee et de l'integrale
-        // pour eviter que la boucle 2 ne pousse le robot en arriere
+// pour eviter que la boucle 2 ne pousse le robot en arriere
         vitesseEstimee  = 0;
         correctionAngle = 0;
         integrale       = 0;
@@ -549,9 +512,8 @@ void loop() {
       break;
     }
 
-    // ── 4. PHASE SETTLE (gel boucle 2, boucle 1 seule) ─────────
-    // Le robot se stabilise sur la boucle 1 pendant settleMs
-    // sans aucune correction de derive (evite le depart en arriere)
+// ── 4. phase settle (gel boucle 2, boucle 1 seule) ─────────
+// le robot se stabilise sur la boucle 1 pendant settlems
     case ETAT_SETTLE: {
       if (fabs(angle) > ANGLE_CHUTE_MAX) {
         enregistrer(0, 0, (uint16_t)dus, 2);
@@ -559,8 +521,8 @@ void loop() {
         break;
       }
 
-      // Boucle 1 uniquement (Kd = Kd normal, plus de boost)
-      consigneActive = consigne; // Pas de correction derive
+// boucle 1 uniquement (kd = kd normal, plus de boost)
+      consigneActive = consigne;
       float erreur   = angle - consigneActive;
       integrale += Ki * erreur * dt;
       integrale  = constrain(integrale, -I_MAX, I_MAX);
@@ -576,20 +538,19 @@ void loop() {
       commandeMoteurs(cmd);
       enregistrer(cmd, sortie, (uint16_t)dus, 2);
 
-      // Apres settleMs, on passe en equlibre complet avec la boucle 2
       if ((int32_t)(millis() - tDebutSettleMs) >= settleMs) {
         etat = ETAT_EQUILIBRE;
-        // Initialisation propre de la boucle 2 depuis un etat calme
+// initialisation propre de la boucle 2 depuis un etat calme
         vitesseEstimee  = 0;
         correctionAngle = 0;
-        integrale       = 0; // Integrale remis a zero pour un demarrage propre
+        integrale       = 0;
         sortie          = 0;
         Serial.printf("SETTLE->EQUILIBRE (angle=%.2f deg)\n", angle);
       }
       break;
     }
 
-    // ── 5. PHASE EQUILIBRE (Double boucle cascade - 10s) ───────
+// ── 5. phase equilibre (double boucle cascade - 10s) ───────
     case ETAT_EQUILIBRE: {
       if (fabs(angle) > ANGLE_CHUTE_MAX) {
         enregistrer(0, 0, (uint16_t)dus, 3);
@@ -597,7 +558,7 @@ void loop() {
         break;
       }
 
-      // Boucle 2 : Dérive lente avec zone morte
+// boucle 2 : dérive lente avec zone morte
       vitesseEstimee += ALPHA_V * (sortie - vitesseEstimee);
       float vActive = 0.0f;
       if (fabs(vitesseEstimee) > V_DEADBAND) {
@@ -608,7 +569,7 @@ void loop() {
       correctionAngle = constrain(Kp2 * vActive, -ANGLE_CORR_MAX, ANGLE_CORR_MAX);
       consigneActive  = consigne - correctionAngle;
 
-      // Boucle 1 : Angle PID
+// boucle 1 : angle pid
       float erreur = angle - consigneActive;
       integrale += Ki * erreur * dt;
       integrale  = constrain(integrale, -I_MAX, I_MAX);

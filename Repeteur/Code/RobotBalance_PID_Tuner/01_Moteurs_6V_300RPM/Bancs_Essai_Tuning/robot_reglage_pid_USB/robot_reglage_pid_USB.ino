@@ -1,34 +1,7 @@
-// ============================================================
-// RobotBalance - réglage PID par USB
-// ESP32-C6 + MPU6050 GY-521 + TB6612FNG
-//
-// Réglage par USB uniquement : le Wi-Fi est complètement supprimé
-// de la boucle de contrôle.
-//
-// Commandes série (une par ligne) :
-//   p15       -> Kp
-//   i0        -> Ki
-//   d1        -> Kd
-//   s7.5      -> consigne
-//   m20       -> PWM minimum / compensation zone morte
-//   a1 / a0   -> armer / désarmer
-//   z         -> recalibrer le gyro (robot IMMOBILE)
-//   g         -> inverser le sens du gyro
-//   r         -> valeurs de départ
-//   v40       -> test roues PWM 40 pendant 0,8 s
-//   q         -> arrêter les moteurs
-//   ?         -> afficher les paramètres
-//
-// Télémétrie USB :
-//   DATA,t_ms,angle,accAngle,gyro,rateF,error,pid,pwm,dt_ms,active,armed,Kp,Ki,Kd
-//
-// La télémétrie est envoyée à 100 Hz. La boucle PID reste à 200 Hz.
-// Baudrate : 921600
-// ============================================================
+// Reglage PID par port serie USB (921600 bauds)
 
 #include <Wire.h>
 
-// ---------------- Broches ----------------
 #define SDA_PIN 2
 #define SCL_PIN 3
 
@@ -40,41 +13,39 @@
 #define BIN2 20
 #define STBY 22
 
-// ---------------- Réglages matériels ----------------
 const int PWM_FREQ = 20000;
 const int PWM_RES  = 8;
 const int PWM_MAX  = 200;
 
-// Moteur B câblé à l'envers
+// moteur b câblé à l'envers
 const int SIGN_MOTEUR_A = 1;
 const int SIGN_MOTEUR_B = -1;
 
-// ---------------- PID ----------------
 float Kp = 15.0;
 float Ki = 0.0;
 float Kd = 1.0;
 float consigne = 7.5;
 int   pwmMin = 20;
 
-// ---------------- Sécurité ----------------
+// securite
 const float ANGLE_CHUTE   = 18.0;
 const float ANGLE_REPRISE = 6.0;
 const float I_MAX         = 80.0;
 const float ZONE_RAMPE    = 30.0;
 
-// Filtre gyro pour le D
+// filtre gyro pour le d
 const float ALPHA_D = 0.4;
 
-// Filtre complémentaire
+// filtre complémentaire
 const float ALPHA = 0.98;
 
-// 200 Hz = 5 ms
+// 200 hz = 5 ms
 const uint32_t PERIODE_US = 5000;
 
-// Télémétrie 100 Hz
+// télémétrie 100 hz
 const uint32_t TELEMETRIE_US = 10000;
 
-// ---------------- MPU6050 ----------------
+// mpu6050
 const uint8_t MPU_ADDR = 0x68;
 float gyroBias = 0;
 float gyroSign = -1.0;
@@ -105,11 +76,10 @@ uint32_t testFin = 0;
 uint32_t dtMaxUs = 0;
 uint32_t dtDernierUs = 0;
 
-// ---------------- Réception série non bloquante ----------------
 char serialBuf[64];
 uint8_t serialPos = 0;
 
-// ---------------- MPU6050 ----------------
+// mpu6050
 void mpuEcrire(uint8_t reg, uint8_t val) {
   Wire.beginTransmission(MPU_ADDR);
   Wire.write(reg);
@@ -132,7 +102,7 @@ bool mpuLire(float &accAngle, float &gyroRate) {
   int16_t az = (Wire.read() << 8) | Wire.read();
 
   Wire.read();
-  Wire.read(); // température ignorée
+  Wire.read();
 
   int16_t gx = (Wire.read() << 8) | Wire.read();
   int16_t gy = (Wire.read() << 8) | Wire.read();
@@ -142,20 +112,20 @@ bool mpuLire(float &accAngle, float &gyroRate) {
   (void)gy;
   (void)gz;
 
-  // IMU montée "debout"
+// imu montée "debout"
   accAngle = atan2((float)az, (float)ay) * RAD_TO_DEG;
 
-  // ±500 °/s -> 65.5 LSB/(°/s)
+// ±500 °/s -> 65.5 lsb/(°/s)
   gyroRate = gyroSign * gx / 65.5;
 
   return true;
 }
 
 void mpuInit() {
-  mpuEcrire(0x6B, 0x00);  // sortie de veille
-  mpuEcrire(0x1A, 0x03);  // DLPF ~44 Hz
-  mpuEcrire(0x1B, 0x08);  // gyro ±500 °/s
-  mpuEcrire(0x1C, 0x00);  // accéléro ±2 g
+  mpuEcrire(0x6B, 0x00);
+  mpuEcrire(0x1A, 0x03);
+  mpuEcrire(0x1B, 0x08);
+  mpuEcrire(0x1C, 0x00);
 }
 
 void calibrationGyro() {
@@ -183,7 +153,7 @@ void calibrationGyro() {
   Serial.println(gyroBias, 5);
 }
 
-// ---------------- Moteurs ----------------
+// moteurs
 void moteur(int pwmPin, int in1, int in2, int vitesse) {
   vitesse = constrain(vitesse, -PWM_MAX, PWM_MAX);
 
@@ -208,7 +178,6 @@ void commandeMoteurs(int v) {
   moteur(PWMB, BIN1, BIN2, SIGN_MOTEUR_B * v);
 }
 
-// ---------------- Paramètres ----------------
 void razEssai() {
   integrale = 0;
   tenueMax = 0;
@@ -297,8 +266,7 @@ void afficheParametres() {
   );
 }
 
-// Lecture série non bloquante.
-// Important : on n'utilise PAS readStringUntil(), qui peut bloquer la boucle.
+// lecture série non bloquante.
 void lireSerie() {
   while (Serial.available() > 0) {
     char c = (char)Serial.read();
@@ -331,13 +299,12 @@ void lireSerie() {
       serialBuf[serialPos++] = c;
     }
     else {
-      // Ligne trop longue : on abandonne la ligne.
+// ligne trop longue : on abandonne la ligne.
       serialPos = 0;
     }
   }
 }
 
-// ---------------- Télémétrie ----------------
 void envoyerTelemetrie() {
   Serial.printf(
     "DATA,%lu,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%d,%.4f,%d,%d,%.3f,%.3f,%.3f\n",
@@ -358,7 +325,6 @@ void envoyerTelemetrie() {
   );
 }
 
-// ---------------- Setup ----------------
 void setup() {
   Serial.begin(921600);
 
@@ -393,10 +359,9 @@ void setup() {
   afficheParametres();
 }
 
-// ---------------- Boucle principale ----------------
 void loop() {
-  // Lecture série non bloquante.
-  // Aucun Wi-Fi, aucun serveur HTTP.
+// lecture série non bloquante.
+// aucun wi-fi, aucun serveur http.
   lireSerie();
 
   uint32_t now = micros();
@@ -406,8 +371,8 @@ void loop() {
 
   uint32_t dus = now - tPrec;
 
-  // Planification à période fixe pour limiter la dérive.
-  // Si la boucle a pris trop de retard, on recale.
+// planification à période fixe pour limiter la dérive.
+// si la boucle a pris trop de retard, on recale.
   tPrec += PERIODE_US;
 
   if ((uint32_t)(now - tPrec) > PERIODE_US * 4UL)
@@ -432,28 +397,28 @@ void loop() {
   rate = gyroRate - gyroBias;
   angleAcc = accAngle;
 
-  // Filtre gyro uniquement pour le terme D
+// filtre gyro uniquement pour le terme d
   rateF += ALPHA_D * (rate - rateF);
 
-  // Filtre complémentaire
+// filtre complémentaire
   angle = ALPHA * (angle + rate * dt)
         + (1.0 - ALPHA) * accAngle;
 
   float erreur = angle - consigne;
 
-  // Test roues : uniquement désarmé
+// test roues : uniquement désarmé
   if (!armed && (int32_t)(testFin - millis()) > 0) {
     commandeMoteurs(testPwm);
     actif = false;
   }
   else {
-    // Mémorisation d'une chute réelle
+// mémorisation d'une chute réelle
     if (actif && armed && fabs(angle) > ANGLE_CHUTE) {
       derniereChute = (angle > 0) ? 1 : -1;
       dureeChute = tenue;
     }
 
-    // Sécurité
+// sécurité
     if (!armed || fabs(angle) > ANGLE_CHUTE) {
       actif = false;
     }
@@ -475,19 +440,19 @@ void loop() {
       if (tenue > tenueMax)
         tenueMax = tenue;
 
-      // I
+// i
       integrale += Ki * erreur * dt;
       integrale = constrain(integrale, -I_MAX, I_MAX);
 
-      // IMPORTANT :
-      // le D s'oppose à la vitesse de chute.
-      // Avec erreur = angle - consigne et gyro positif quand
-      // l'angle augmente, le terme D doit donc être -Kd * rateF.
+// important :
+// le d s'oppose à la vitesse de chute.
+// avec erreur = angle - consigne et gyro positif quand
+// l'angle augmente, le terme d doit donc être -kd * ratef.
       sortie = Kp * erreur + integrale - Kd * rateF;
 
       sortie = constrain(sortie, -PWM_MAX, PWM_MAX);
 
-      // Compensation progressive de la zone morte moteur.
+// compensation progressive de la zone morte moteur.
       float absS = fabs(sortie);
       float offset = pwmMin * min(absS / ZONE_RAMPE, 1.0f);
 
@@ -504,9 +469,9 @@ void loop() {
     }
   }
 
-  // Télémétrie 100 Hz.
-  // 100 Hz est largement suffisant pour analyser le comportement
-  // d'un PID tournant à 200 Hz, tout en gardant une marge USB.
+// télémétrie 100 hz.
+// 100 hz est largement suffisant pour analyser le comportement
+// d'un pid tournant à 200 hz, tout en gardant une marge usb.
   if ((uint32_t)(now - tTelem) >= TELEMETRIE_US) {
     tTelem += TELEMETRIE_US;
     envoyerTelemetrie();

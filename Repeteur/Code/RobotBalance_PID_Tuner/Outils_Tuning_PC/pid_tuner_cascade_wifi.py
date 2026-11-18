@@ -1,40 +1,5 @@
-"""
-RobotBalance PID Tuner — version WiFi
-======================================
-
-Interface graphique pour régler expérimentalement le PID du robot
-ESP32-C6 + MPU6050 via WiFi (SoftAP du robot).
-
-PRINCIPE DU FIRMWARE WIFI :
-  Le WiFi n'est actif QUE lorsque le robot est tombé / en attente.
-  La boucle PID tourne sans aucune activité radio (200 Hz propre).
-
-  Cycle :
-    1. COMMS  : WiFi allumé. Le PC se connecte, reçoit le dernier essai,
-                règle les gains, puis envoie "a1" pour armer.
-    2. ARMÉ   : WiFi COUPÉ. Le robot attend d'être redressé.
-    3. ACTIF  : PID tourne, télémétrie stockée en RAM (pas de streaming).
-    4. retour à COMMS : WiFi rallumé, l'essai complet est envoyé au PC.
-
-RÉSEAU :
-  SSID : RobotPID   mot de passe : robot1234
-  IP du robot : 192.168.4.1   port TCP : 3333
-
-PROTOCOLE ROBOT -> PC :
-  INFO,texte
-  PARAM,Kp=..,Ki=..,Kd=..,consigne=..,pwmMin=..,gyroSign=..,armed=..,pending=..,cap=..
-  ARMING
-  TRIAL,num,nbEchantillons,Kp,Ki,Kd,consigne,pwmMin,raison
-  D,t_ms,angle*100,acc*100,gyro*10,rateF*10,pid*10,pwm,dt_us
-  END,num
-
-INSTALLATION :
-    pip install matplotlib
-
-LANCEMENT :
-    python pid_tuner_wifi.py
-    ou double-clic sur lancer_pid_tuner_wifi.bat
-"""
+# Tuning PID en wifi (version double boucle cascade)
+# RobotPID / robot1234 sur port 3333
 
 import csv
 import json
@@ -55,7 +20,7 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 
-# ── Réseau ────────────────────────────────────────────────────────────────────
+# reseau
 ROBOT_IP   = "192.168.4.1"
 ROBOT_PORT = 3333
 TCP_TIMEOUT  = 5.0    # secondes pour la connexion initiale
@@ -64,7 +29,6 @@ RECV_TIMEOUT = 0.05   # secondes de lecture non bloquante
 MAX_POINTS_PLOT = 2500
 
 
-# ── Dataclasses ───────────────────────────────────────────────────────────────
 @dataclass
 class Trial:
     number: int
@@ -91,7 +55,7 @@ class Trial:
     ki2: float = 0.0
 
 
-# ── Analyseur PID ─────────────────────────────────────────────────────────────
+# analyse
 class PIDAnalyzer:
     """Analyse simple, volontairement robuste et lisible."""
 
@@ -210,14 +174,13 @@ class PIDAnalyzer:
         }
 
 
-# ── Application principale ────────────────────────────────────────────────────
+# interface
 class PIDTunerWifi:
     def __init__(self, root):
         self.root = root
         self.root.title("RobotBalance — PID Tuner WiFi")
         self.root.geometry("1450x950")
 
-        # ── Socket TCP ──────────────────────────────────────────────────────
         self._sock = None
         self._reader_thread = None
         self._reader_stop = threading.Event()
@@ -225,7 +188,7 @@ class PIDTunerWifi:
 
         self.connected = False
 
-        # ── Paramètres PID ──────────────────────────────────────────────────
+# params
         self.params = {
             "kp":       15.0,
             "ki":       1.0,
@@ -236,16 +199,13 @@ class PIDTunerWifi:
             "ki2":      0.0,
         }
 
-        # ── État interne ────────────────────────────────────────────────────
         self.current_data = []
         self.current_trial_number = 0
         self.trials = []
         self.last_analysis = None
 
-        # Essai en cours de réception (entre TRIAL et END)
         self._incoming_trial = None
 
-        # Indicateur "essai en attente" reçu dans PARAM
         self._pending_trial = False
 
         self.session_started = datetime.now().isoformat(timespec="seconds")
@@ -255,9 +215,7 @@ class PIDTunerWifi:
 
         self.root.protocol("WM_DELETE_WINDOW", self.close)
 
-    # ── Construction de l'interface ──────────────────────────────────────────
     def _build_ui(self):
-        # --- Barre de connexion ---
         top = ttk.Frame(self.root, padding=8)
         top.pack(fill="x")
 
@@ -281,7 +239,6 @@ class PIDTunerWifi:
         ttk.Button(top, text="Importer session", command=self._import_session).pack(side="right")
         ttk.Button(top, text="Exporter session", command=self._export_session).pack(side="right", padx=5)
 
-        # --- Guide ---
         guide = ttk.LabelFrame(self.root, text="Guide de réglage", padding=8)
         guide.pack(fill="x", padx=8, pady=4)
 
@@ -309,7 +266,6 @@ class PIDTunerWifi:
         )
         self._recommendation_label.pack(anchor="w", pady=4)
 
-        # --- Contrôles PID ---
         controls = ttk.LabelFrame(self.root, text="Réglages", padding=8)
         controls.pack(fill="x", padx=8, pady=4)
 
@@ -339,7 +295,6 @@ class PIDTunerWifi:
         self._arm_button.pack(side="right", padx=5)
         ttk.Button(controls, text="STOP MOTEURS", command=self._stop).pack(side="right")
 
-        # --- Test roues rapide ---
         wheel = ttk.LabelFrame(self.root, text="Test roues rapide — robot désarmé", padding=5)
         wheel.pack(fill="x", padx=8, pady=4)
 
@@ -348,11 +303,9 @@ class PIDTunerWifi:
             ttk.Button(wheel, text=str(pwm),
                        command=lambda p=pwm: self._send(f"v{p}")).pack(side="left", padx=2)
 
-        # --- Test PWM fin ---
         pwm_fine = ttk.LabelFrame(self.root, text="Test PWM fin — réglage précis", padding=5)
         pwm_fine.pack(fill="x", padx=8, pady=(0, 4))
 
-        # Slider PWM
         ttk.Label(pwm_fine, text="PWM :").pack(side="left")
         self._pwm_fine_var = tk.IntVar(value=30)
         self._pwm_slider = ttk.Scale(
@@ -363,19 +316,16 @@ class PIDTunerWifi:
         )
         self._pwm_slider.pack(side="left", padx=6)
 
-        # Champ numérique
         self._pwm_entry_var = tk.StringVar(value="30")
         pwm_entry = ttk.Entry(pwm_fine, textvariable=self._pwm_entry_var, width=5)
         pwm_entry.pack(side="left", padx=4)
         pwm_entry.bind("<Return>", self._on_pwm_entry)
         pwm_entry.bind("<FocusOut>", self._on_pwm_entry)
 
-        # Durée
         ttk.Label(pwm_fine, text="Durée (s) :").pack(side="left", padx=(12, 2))
         self._pwm_dur_var = tk.StringVar(value="1.0")
         ttk.Entry(pwm_fine, textvariable=self._pwm_dur_var, width=5).pack(side="left", padx=4)
 
-        # Boutons
         ttk.Button(
             pwm_fine, text="▶ Lancer test",
             command=self._send_pwm_fine,
@@ -389,7 +339,6 @@ class PIDTunerWifi:
         self._pwm_fine_label = ttk.Label(pwm_fine, text="PWM : 30")
         self._pwm_fine_label.pack(side="left", padx=12)
 
-        # --- Notebook ---
         notebook = ttk.Notebook(self.root)
         notebook.pack(fill="both", expand=True, padx=8, pady=5)
 
@@ -468,7 +417,7 @@ class PIDTunerWifi:
         self._log_text.pack(fill="both", expand=True)
         sb.config(command=self._log_text.yview)
 
-    # ── Connexion TCP ─────────────────────────────────────────────────────────
+# liaison serie / tcp
     def _connect(self):
         if self.connected:
             messagebox.showinfo("WiFi", "Déjà connecté.")
@@ -569,7 +518,7 @@ class PIDTunerWifi:
         except OSError as e:
             messagebox.showerror("WiFi TX", str(e))
 
-    # ── Paramètres ────────────────────────────────────────────────────────────
+# params
     def _read_params_from_ui(self):
         try:
             return {
@@ -648,7 +597,6 @@ class PIDTunerWifi:
         self._send("q")
         self._arm_button.config(text="ARMER")
 
-    # ── Test PWM fin ─────────────────────────────────────────────────────────
     def _on_pwm_slider(self, value):
         """Synchronise le champ numérique quand le slider bouge."""
         v = int(float(value))
@@ -695,7 +643,7 @@ class PIDTunerWifi:
 
         _fire(n_shots)
 
-    # ── Parsing du protocole WiFi ─────────────────────────────────────────────
+# traitement donnees
     def _parse_line(self, line):
         """Traite une ligne reçue du robot."""
         self._log(line)
@@ -911,7 +859,7 @@ class PIDTunerWifi:
         )
         self._update_guide()
 
-    # ── Graphiques ────────────────────────────────────────────────────────────
+# courbes
     def _plot_data(self, data):
         if not data:
             return
@@ -935,7 +883,6 @@ class PIDTunerWifi:
 
         self._canvas.draw_idle()
 
-    # ── Historique ────────────────────────────────────────────────────────────
     def _add_history_row(self, t):
         vals = (
             t.number,
@@ -960,7 +907,6 @@ class PIDTunerWifi:
         )
         self._plot_data(trial.data)
 
-    # ── Log brut TCP ──────────────────────────────────────────────────────────
     def _log(self, text):
         self._log_text.config(state="normal")
         self._log_text.insert("end", text + "\n")
@@ -970,7 +916,6 @@ class PIDTunerWifi:
         self._log_text.see("end")
         self._log_text.config(state="disabled")
 
-    # ── Guide de réglage ─────────────────────────────────────────────────────
     def _update_guide(self):
         n = len(self.trials)
 
@@ -1025,7 +970,7 @@ class PIDTunerWifi:
                 )
             )
 
-    # ── Export / import ───────────────────────────────────────────────────────
+# export session
     def _export_session(self):
         if not self.trials:
             messagebox.showinfo("Export", "Aucun essai terminé à exporter.")
@@ -1116,7 +1061,7 @@ class PIDTunerWifi:
         except Exception as e:
             messagebox.showerror("Import", str(e))
 
-    # ── Boucle de mise à jour GUI ─────────────────────────────────────────────
+# loop update
     def _update_gui(self):
         while True:
             try:
@@ -1134,7 +1079,6 @@ class PIDTunerWifi:
         self.root.destroy()
 
 
-# ── Point d'entrée ────────────────────────────────────────────────────────────
 def main():
     root = tk.Tk()
     app  = PIDTunerWifi(root)
