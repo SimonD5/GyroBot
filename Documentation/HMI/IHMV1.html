@@ -476,7 +476,7 @@
                     <circle cx="22" cy="18" r="2" fill="#0B1F5C" />
                     <path d="M14.5 21Q17 19 19.5 21Q17 24 14.5 21Z" fill="#F0A93A" />
                 </svg>GYROBOT</b><span class="ch">Robot connecté</span><span class="ch">Liaison 2,4 GHz</span><span
-                class="ch">Latence 18 ms</span><span class="ch">Firmware v0.3.1</span><span class="sp"></span><span
+                class="ch">Latence --- ms</span> <!-- mettre variable latence liaison --><span class="ch">Firmware v0.3.1</span><span class="sp"></span><span
                 id="mode" class="ch or">Lecture seule · télécommande active</span><button id="tk">Prendre la
                 main</button></header>
         <nav class="wing"><button data-t="t6">Connexion<small>Liaison carte</small></button><button
@@ -487,7 +487,7 @@
                     debug</small></button>
             <div class="c">
                 <h3>Session</h3>
-                <div class="kv"><span>Enregistrement</span><b>00:12:41</b></div>
+                <div class="kv"><span>Enregistrement</span><b>---</b></div> <!-- mettre variable duree session -->
                 <div class="kv"><span>Fichier log</span><b>run_042.csv</b></div>
                 <div class="row"><button class="sec">Pause</button><button class="sec">Marquer</button></div>
             </div>
@@ -518,7 +518,7 @@
                             <div class="kv"><span>1 · Détection carte</span><b>OK</b></div>
                             <div class="kv"><span>2 · Ouverture port</span><b>OK</b></div>
                             <div class="kv"><span>3 · Handshake</span><b>OK</b></div>
-                            <div class="kv"><span>4 · Flux télémétrie</span><b>20 Hz</b></div>
+                            <div class="kv"><span>4 · Flux télémétrie</span><b>--- Hz</b></div> <!-- mettre variable flux telemetrie -->
                         </div>
                     </div>
                 </div>
@@ -531,7 +531,7 @@
                         <div class="kv"><span>2 · Zéro lidar</span><b>OK</b></div>
                         <div class="kv"><span>3 · Test moteurs G/D</span><b>OK</b></div>
                         <div class="kv"><span>4 · Équilibre initial</span><b>En cours…</b></div>
-                        <div class="bar"><i style="width:75%"></i></div>
+                        <div class="bar"><i style="width:0%"></i></div> <!-- mettre variable progression calibration -->
                         <div class="row"><button class="sec">Calibrer IMU</button><button class="sec">Zéro
                                 lidar</button><button class="sec">Test moteurs</button><button>Lancer la
                                 séquence</button></div>
@@ -539,8 +539,8 @@
                     <div style="display:grid;gap:14px;align-content:start">
                         <div class="c">
                             <h3>Biais mesurés</h3>
-                            <div class="kv"><span>Gyro X/Y/Z</span><b>0,02 / −0,01 / 0,00 °/s</b></div>
-                            <div class="kv"><span>Offset angle</span><b>0,3°</b></div>
+                            <div class="kv"><span>Gyro X/Y/Z</span><b>--- / --- / --- °/s</b></div> <!-- mettre variables biais gyro -->
+                            <div class="kv"><span>Offset angle</span><b>---°</b></div> <!-- mettre variable offset angle -->
                         </div>
                         <div class="c">
                             <h3>Avant de démarrer</h3>
@@ -616,7 +616,7 @@
                         </g>
                         <rect x="646" y="336" width="88" height="22" rx="11" fill="#0B1F5C" stroke="#22C3F0"
                             stroke-width="2" /><text x="690" y="351" text-anchor="middle"
-                            style="font:800 11px Nunito,sans-serif;fill:#22C3F0">CAM · 5 Hz</text>
+                            style="font:800 11px Nunito,sans-serif;fill:#22C3F0">CAM · --- Hz</text> <!-- mettre variable frequence cam tete -->
                         <circle cx="642" cy="232" r="9" fill="#fff" fill-opacity=".9" />
                     </g>
                     <g class="hit" data-t="t5">
@@ -637,37 +637,37 @@
                     <div class="c">
                         <h3>État du robot <span class="ch nd">Prêt</span></h3>
                         <div class="kv"><span>Équilibre</span><b>Stable</b></div>
-                        <div class="kv"><span>Boucle de contrôle</span><b>200 Hz</b></div>
-                        <div class="kv"><span>Temps de marche</span><b>00:12:41</b></div>
-                        <div class="kv"><span>Batterie 3S</span><b>12,1 V · 87 %</b></div>
-                        <div class="bar"><i style="width:87%"></i></div>
+                        <div class="kv"><span>Boucle de contrôle</span><b>--- Hz</b></div> <!-- mettre variable frequence boucle controle -->
+                        <div class="kv"><span>Temps de marche</span><b>---</b></div> <!-- mettre variable temps de marche -->
+                        <div class="kv"><span>Batterie 3S</span><b>--- V · --- %</b></div> <!-- mettre variables tension et pourcentage batterie -->
+                        <div class="bar"><i style="width:0%"></i></div> <!-- mettre variable jauge batterie -->
                     </div>
                     <div class="c">
                         <h3>Orientation</h3>
-                        <div class="kv"><span>Inclinaison</span><b>2,1°</b></div>
-                        <div class="kv"><span>Vitesse angulaire</span><b>0,8 °/s</b></div>
-                        <div class="kv"><span>Vitesse roue G / D</span><b>0,34 / 0,36 m/s</b></div>
-                        <div class="kv"><span>Cap</span><b>127°</b></div>
+                        <div class="kv"><span>Inclinaison</span><b>---°</b></div> <!-- mettre variable inclinaison -->
+                        <div class="kv"><span>Vitesse angulaire</span><b>--- °/s</b></div> <!-- mettre variable vitesse angulaire -->
+                        <div class="kv"><span>Vitesse roue G / D</span><b>--- / --- m/s</b></div> <!-- mettre variables vitesse roues gauche droite -->
+                        <div class="kv"><span>Cap</span><b>---°</b></div> <!-- mettre variable cap -->
                     </div>
                     <div class="c">
                         <h3>Liaison</h3>
                         <div class="kv"><span>Télécommande → robot</span><b>OK</b></div>
-                        <div class="kv"><span>Robot → PC</span><b>20 Hz</b></div>
-                        <div class="kv"><span>Signal (RSSI)</span><b>−52 dBm</b></div>
-                        <div class="kv"><span>Paquets perdus</span><b>0,3 %</b></div>
+                        <div class="kv"><span>Robot → PC</span><b>--- Hz</b></div> <!-- mettre variable frequence robot pc -->
+                        <div class="kv"><span>Signal (RSSI)</span><b>--- dBm</b></div> <!-- mettre variable signal rssi -->
+                        <div class="kv"><span>Paquets perdus</span><b>--- %</b></div> <!-- mettre variable paquets perdus -->
                     </div>
                     <div class="c">
                         <h3>Lidar</h3>
-                        <div class="kv"><span>Fréquence</span><b>8 Hz</b></div>
-                        <div class="kv"><span>Points par tour</span><b>360</b></div>
-                        <div class="kv"><span>Obstacle le plus proche</span><b>0,42 m · AV gauche</b></div>
-                        <div class="kv"><span>Surface cartographiée</span><b>14,2 m²</b></div>
+                        <div class="kv"><span>Fréquence</span><b>--- Hz</b></div> <!-- mettre variable frequence lidar -->
+                        <div class="kv"><span>Points par tour</span><b>---</b></div> <!-- mettre variable points tour lidar -->
+                        <div class="kv"><span>Obstacle le plus proche</span><b>--- m · ---</b></div> <!-- mettre variable obstacle plus proche -->
+                        <div class="kv"><span>Surface cartographiée</span><b>--- m²</b></div> <!-- mettre variable surface cartographiee -->
                     </div>
                     <div class="c" style="grid-column:1/-1">
                         <h3>Événements récents</h3>
-                        <div class="kv"><span>12:47:16</span><b>Caméra reprise · 2 Hz</b></div>
-                        <div class="kv"><span>12:46:37</span><b>Batterie sous 90 %</b></div>
-                        <div class="kv"><span>12:44:02</span><b>Obstacle à 0,42 m · avant gauche</b></div>
+                        <div class="kv"><span>---</span><b>---</b></div> <!-- mettre variable log recent 1 -->
+                        <div class="kv"><span>---</span><b>---</b></div> <!-- mettre variable log recent 2 -->
+                        <div class="kv"><span>---</span><b>---</b></div> <!-- mettre variable log recent 3 -->
                     </div>
                 </div>
             </section>
@@ -675,7 +675,7 @@
             <section id="t2" class="tab">
                 <div class="split">
                     <div class="c">
-                        <h3>Carte lidar <span><span class="ch nd">8 Hz</span> <span class="ch nd">Robot au centre</span></span></h3>
+                        <h3>Carte lidar <span><span class="ch nd">--- Hz</span> <!-- mettre variable frequence lidar carte --> <span class="ch nd">Robot au centre</span></span></h3>
                         <svg viewBox="0 0 600 520" role="img" aria-label="Carte lidar en cours de construction">
                             <rect width="600" height="520" rx="18" fill="#0B1F5C" />
                             <g transform="translate(300 260)">
@@ -717,21 +717,21 @@
                             </div>
                             <div class="row">
                                 <button id="btn_res" class="sec" style="padding: 2px 10px; font-size: 12px;">320×240</button>
-                                <span id="lbl_age" class="ch nd">Latence 0,0 s</span>
+                                <span id="lbl_age" class="ch nd">Latence --- s</span> <!-- mettre variable latence image -->
                                 <button id="btn_fps" class="sec" style="padding: 2px 10px; font-size: 12px;">2 Hz</button>
                             </div>
                         </div>
 
                         <div class="c">
                             <h3>Distances lidar</h3>
-                            <div class="kv"><span>Avant</span><b>1,85 m</b></div>
-                            <div class="bar"><i style="width:62%"></i></div>
-                            <div class="kv"><span>Gauche</span><b>0,42 m</b></div>
-                            <div class="bar"><i style="width:14%;background:var(--or)"></i></div>
-                            <div class="kv"><span>Droite</span><b>1,10 m</b></div>
-                            <div class="bar"><i style="width:37%"></i></div>
-                            <div class="kv"><span>Arrière</span><b>2,30 m</b></div>
-                            <div class="bar"><i style="width:77%"></i></div>
+                            <div class="kv"><span>Avant</span><b>--- m</b></div> <!-- mettre variable distance avant -->
+                            <div class="bar"><i style="width:0%"></i></div> <!-- mettre variable jauge distance avant -->
+                            <div class="kv"><span>Gauche</span><b>--- m</b></div> <!-- mettre variable distance gauche -->
+                            <div class="bar"><i style="width:0%;background:var(--or)"></i></div> <!-- mettre variable jauge distance gauche -->
+                            <div class="kv"><span>Droite</span><b>--- m</b></div> <!-- mettre variable distance droite -->
+                            <div class="bar"><i style="width:0%"></i></div> <!-- mettre variable jauge distance droite -->
+                            <div class="kv"><span>Arrière</span><b>--- m</b></div> <!-- mettre variable distance arriere -->
+                            <div class="bar"><i style="width:0%"></i></div> <!-- mettre variable jauge distance arriere -->
                         </div>
                     </div>
                 </div>
@@ -756,12 +756,12 @@
                     </div>
                     <div class="c">
                         <h3>Alimentation et températures</h3>
-                        <div class="kv"><span>Tension batterie</span><b>12,1 V</b></div>
-                        <div class="kv"><span>Courant</span><b>1,8 A</b></div>
-                        <div class="kv"><span>Driver G</span><b>41 °C</b></div>
-                        <div class="kv"><span>Driver D</span><b>43 °C</b></div>
-                        <div class="kv"><span>IMU</span><b>34 °C</b></div>
-                        <div class="kv"><span>Batterie</span><b>29 °C</b></div>
+                        <div class="kv"><span>Tension batterie</span><b>--- V</b></div> <!-- mettre variable tension batterie -->
+                        <div class="kv"><span>Courant</span><b>--- A</b></div> <!-- mettre variable courant consommation -->
+                        <div class="kv"><span>Driver G</span><b>--- °C</b></div> <!-- mettre variable temperature driver gauche -->
+                        <div class="kv"><span>Driver D</span><b>--- °C</b></div> <!-- mettre variable temperature driver droit -->
+                        <div class="kv"><span>IMU</span><b>--- °C</b></div> <!-- mettre variable temperature imu -->
+                        <div class="kv"><span>Batterie</span><b>--- °C</b></div> <!-- mettre variable temperature batterie -->
                     </div>
                 </div>
             </section>
@@ -771,16 +771,16 @@
                     <div class="c">
                         <h3>Régulation d'équilibre <span><span class="ch nd ro">Lecture seule</span><span
                                     class="ch nd pcs">Écriture PC active</span></span></h3>
-                        <div class="kv"><span>Boucle angle · Kp</span><b>18,50</b></div><input class="pin" type="range"
-                            min="0" max="40" step=".5" value="18.5" disabled>
-                        <div class="kv"><span>Boucle angle · Ki</span><b>0,40</b></div><input class="pin" type="range"
-                            min="0" max="5" step=".05" value=".4" disabled>
-                        <div class="kv"><span>Boucle angle · Kd</span><b>1,20</b></div><input class="pin" type="range"
-                            min="0" max="10" step=".05" value="1.2" disabled>
-                        <div class="kv"><span>Boucle vitesse · Kp</span><b>0,60</b></div><input class="pin" type="range"
-                            min="0" max="5" step=".05" value=".6" disabled>
-                        <div class="kv"><span>Boucle vitesse · Ki</span><b>0,08</b></div><input class="pin" type="range"
-                            min="0" max="1" step=".01" value=".08" disabled>
+                        <div class="kv"><span>Boucle angle · Kp</span><b>---</b></div> <!-- mettre variable kp angle -->
+                        <input class="pin" type="range" min="0" max="40" step=".5" value="18.5" disabled>
+                        <div class="kv"><span>Boucle angle · Ki</span><b>---</b></div> <!-- mettre variable ki angle -->
+                        <input class="pin" type="range" min="0" max="5" step=".05" value=".4" disabled>
+                        <div class="kv"><span>Boucle angle · Kd</span><b>---</b></div> <!-- mettre variable kd angle -->
+                        <input class="pin" type="range" min="0" max="10" step=".05" value="1.2" disabled>
+                        <div class="kv"><span>Boucle vitesse · Kp</span><b>---</b></div> <!-- mettre variable kp vitesse -->
+                        <input class="pin" type="range" min="0" max="5" step=".05" value=".6" disabled>
+                        <div class="kv"><span>Boucle vitesse · Ki</span><b>---</b></div> <!-- mettre variable ki vitesse -->
+                        <input class="pin" type="range" min="0" max="1" step=".01" value=".08" disabled>
                         <div class="row"><button class="pin" disabled>Appliquer au robot</button><button class="sec pin"
                                 disabled>Enregistrer le profil</button></div>
                         <p class="note ro">Les valeurs affichées sont celles reçues du robot. Pour les modifier, prends
@@ -788,24 +788,17 @@
                     </div>
                     <div style="display:grid;gap:14px;align-content:start">
                         <div class="c">
-                            <h3>Profils</h3>
-                            <div class="row" style="margin:0"><button class="sec pin" disabled>Défaut</button><button
-                                    class="sec pin" disabled>Sol lisse</button><button class="sec pin"
-                                    disabled>Moquette</button></div>
-                            <div class="kv" style="margin-top:8px"><span>Profil actif</span><b>Défaut</b></div>
-                        </div>
-                        <div class="c">
                             <h3>Limites</h3>
-                            <div class="kv"><span>Angle de coupure</span><b>±35°</b></div>
-                            <div class="kv"><span>Couple max</span><b>60 %</b></div>
-                            <div class="kv"><span>Rampe d'accélération</span><b>0,5 m/s²</b></div>
+                            <div class="kv"><span>Angle de coupure</span><b>±---°</b></div> <!-- mettre variable limite angle coupure -->
+                            <div class="kv"><span>Couple max</span><b>--- %</b></div> <!-- mettre variable limite couple max -->
+                            <div class="kv"><span>Rampe d'accélération</span><b>--- m/s²</b></div> <!-- mettre variable limite rampe acceleration -->
                         </div>
                         <div class="c">
                             <h3>Moteurs</h3>
-                            <div class="kv"><span>Gauche</span><b>42 %</b></div>
-                            <div class="bar"><i style="width:42%"></i></div>
-                            <div class="kv"><span>Droit</span><b>45 %</b></div>
-                            <div class="bar"><i style="width:45%"></i></div>
+                            <div class="kv"><span>Gauche</span><b>--- %</b></div> <!-- mettre variable commande moteur gauche -->
+                            <div class="bar"><i style="width:0%"></i></div> <!-- mettre variable jauge moteur gauche -->
+                            <div class="kv"><span>Droit</span><b>--- %</b></div> <!-- mettre variable commande moteur droit -->
+                            <div class="bar"><i style="width:0%"></i></div> <!-- mettre variable jauge moteur droit -->
                         </div>
                     </div>
                 </div>
@@ -837,33 +830,33 @@
                                 </tr>
                                 <tr>
                                     <td>IMU</td>
-                                    <td>20 Hz</td>
-                                    <td>12 ms</td>
+                                    <td>--- Hz</td> <!-- mettre variable cadence imu -->
+                                    <td>--- ms</td> <!-- mettre variable derniere trame imu -->
                                 </tr>
                                 <tr>
                                     <td>ODOM</td>
-                                    <td>20 Hz</td>
-                                    <td>14 ms</td>
+                                    <td>--- Hz</td> <!-- mettre variable cadence odom -->
+                                    <td>--- ms</td> <!-- mettre variable derniere trame odom -->
                                 </tr>
                                 <tr>
                                     <td>LIDAR</td>
-                                    <td>8 Hz</td>
-                                    <td>96 ms</td>
+                                    <td>--- Hz</td> <!-- mettre variable cadence lidar -->
+                                    <td>--- ms</td> <!-- mettre variable derniere trame lidar -->
                                 </tr>
                                 <tr>
                                     <td>CAM</td>
-                                    <td>2 Hz</td>
-                                    <td>410 ms</td>
+                                    <td>--- Hz</td> <!-- mettre variable cadence cam -->
+                                    <td>--- ms</td> <!-- mettre variable derniere trame cam -->
                                 </tr>
                                 <tr>
                                     <td>STATUS</td>
-                                    <td>5 Hz</td>
-                                    <td>120 ms</td>
+                                    <td>--- Hz</td> <!-- mettre variable cadence status -->
+                                    <td>--- ms</td> <!-- mettre variable derniere trame status -->
                                 </tr>
                                 <tr>
                                     <td>BATT</td>
-                                    <td>1 Hz</td>
-                                    <td>640 ms</td>
+                                    <td>--- Hz</td> <!-- mettre variable cadence batt -->
+                                    <td>--- ms</td> <!-- mettre variable derniere trame batt -->
                                 </tr>
                             </table>
                         </div>
@@ -871,7 +864,7 @@
                             <h3>Liaison série</h3>
                             <div class="kv"><span>Port</span><b>/dev/ttyUSB0</b></div>
                             <div class="kv"><span>Débit</span><b>115200 bauds</b></div>
-                            <div class="kv"><span>Octets reçus</span><b>1,4 Mo</b></div>
+                            <div class="kv"><span>Octets reçus</span><b>--- Mo</b></div> <!-- mettre variable octets recus -->
                         </div>
                     </div>
                 </div>
@@ -881,25 +874,177 @@
     </div>
     <script>
     // onglets
-    const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
-    $$('.wing button').forEach(b => b.onclick = () => { $$('.wing button,.tab').forEach(x => x.classList.remove('on')); b.classList.add('on'); $('#' + b.dataset.t).classList.add('on') });
-    $('#tk').onclick = () => { const p = document.body.classList.toggle('pc'); $('#tk').textContent = p ? 'Rendre à la télécommande' : 'Prendre la main'; $('#mode').textContent = p ? 'PC aux commandes · télécommande en veille' : 'Lecture seule · télécommande active'; $('#cap').textContent = p ? 'PC aux commandes' : 'Télécommande active'; $('#bk').textContent = p ? 'PC' : 'RC'; $('#mode').classList.toggle('or', !p); $$('.pin').forEach(i => { i.disabled = !p }); $$('input.pin[type=text]').forEach(i => i.placeholder = p ? 'Commande (ex. M114)' : 'Sortie seule : prends la main pour envoyer une commande') };
-    $$('input[type=range]').forEach(i => i.oninput = () => i.previousElementSibling.querySelector('b').textContent = (+i.value).toFixed(2).replace('.', ','));
-    
-    const R = [[-2.2, 2], [.4, 2.6], [2.1, 2.2], [2.5, -.4], [2, -2.3], [-1.4, -2.6], [-2.5, -1]], O = [[.8, .6], [1.6, .6], [1.6, 1.5], [.8, 1.5]];
-    function dots(P, sc, r, f) { let s = ''; P.forEach((a, i) => { const b = P[(i + 1) % P.length], k = Math.floor(Math.hypot(b[0] - a[0], b[1] - a[1]) / .1); for (let j = 0; j < k; j++) { const t = j / k, x = a[0] + (b[0] - a[0]) * t + Math.sin(i * 7 + j) * .02, y = a[1] + (b[1] - a[1]) * t + Math.cos(j * 3 + i) * .02; s += `<circle cx="${(x * sc).toFixed(1)}" cy="${(-y * sc).toFixed(1)}" r="${r}" fill="${f}"/>` } }); return s }
-    if ($('#m1')) $('#m1').innerHTML = dots(R, 28, 1.5, '#fff') + dots(O, 28, 1.5, '#fff');
-    if ($('#m2')) $('#m2').innerHTML = dots(R, 85, 2.4, '#fff') + dots(O, 85, 2.4, '#F0A93A');
+    const $ = s => document.querySelector(s);
+    const $$ = s => [...document.querySelectorAll(s)];
 
-    function ch(id, S, a, b) { if(!$(id)) return; let g = ''; for (let i = 0; i <= 4; i++) { const y = 14 + 172 * i / 4 * .93; g += `<line x1="40" x2="560" y1="${y}" y2="${y}" class="gr"/><text x="0" y="${y + 4}" class="tx">${(b - (b - a) * i / 4).toFixed(1)}</text>` } S.forEach(s => { let d = ''; for (let i = 0; i <= 120; i++) { const v = s.f(i / 2), x = 40 + 520 * i / 120, y = 14 + 160 * (b - v) / (b - a); d += (i ? 'L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1) } g += `<path d="${d}" fill="none" stroke="${s.c}" stroke-width="3" stroke-linejoin="round"${s.d ? ' stroke-dasharray="6 5"' : ''}/>` }); $(id).innerHTML = g + '<text x="40" y="198" class="tx">−60 s</text><text x="560" y="198" class="tx" text-anchor="end">maintenant</text>' }
-    ch('#c1', [{ c: '#F0A93A', d: 1, f: t => 0 }, { c: '#22C3F0', f: t => 3 * Math.sin(t / 2.1) * Math.exp(-t / 35) + .25 * Math.sin(t * 2.9) }], -4, 4);
-    ch('#c2', [{ c: '#22C3F0', f: t => .35 + .05 * Math.sin(t / 3) }, { c: '#2FB37A', f: t => .35 + .05 * Math.sin(t / 3 + .6) }], 0, .6);
-    ch('#c3', [{ c: '#22C3F0', f: t => 42 + 12 * Math.sin(t / 2.6) * Math.exp(-t / 45) }, { c: '#2FB37A', f: t => 45 + 12 * Math.sin(t / 2.6 + .5) * Math.exp(-t / 45) }], 0, 100);
+    $$('.wing button').forEach(btn => {
+        btn.onclick = () => {
+            $$('.wing button, .tab').forEach(el => el.classList.remove('on'));
+            btn.classList.add('on');
+            $('#' + btn.dataset.t).classList.add('on');
+        };
+    });
 
-    const L = [['OK', '12:41:03', 'Liaison série ouverte · /dev/ttyUSB0 · 115200'], ['INFO', '12:41:04', 'IMU calibrée · biais gyro 0,02 °/s'], ['INFO', '12:41:05', 'Lidar : 360 pts/tour à 8 Hz'], ['OK', '12:41:06', 'Boucle d\'équilibre démarrée · 200 Hz'], ['INFO', '12:41:20', 'Mode : télécommande (RC)'], ['WARN', '12:43:11', 'Paquets perdus : 2 sur 640 (0,3 %)'], ['INFO', '12:44:02', 'Obstacle à 0,42 m · avant gauche'], ['WARN', '12:46:37', 'Batterie 12,1 V · 87 %'], ['ERR', '12:47:15', 'Timeout caméra · image ignorée'], ['INFO', '12:47:16', 'Caméra reprise · 2 Hz']];
-    if ($('#log')) $('#log').innerHTML = L.map(l => `<div class="l ${l[0]}"><span>${l[1]}</span><b>${l[0]}</b>${l[2]}</div>`).join('');
-    $$('.f').forEach(b => b.onclick = () => { $('#log').classList.toggle('h' + b.dataset.f); b.style.opacity = b.style.opacity === '.5' ? '' : '.5' });
-    $$('.hit').forEach(g => g.onclick = () => { $$('.wing button,.tab').forEach(x => x.classList.remove('on')); const b = $(`.wing button[data-t="${g.dataset.t}"]`); if (b) { b.classList.add('on'); $('#' + g.dataset.t).classList.add('on') } });
+    $$('.hit').forEach(link => {
+        link.onclick = () => {
+            $$('.wing button, .tab').forEach(el => el.classList.remove('on'));
+            const targetBtn = $(`.wing button[data-t="${link.dataset.t}"]`);
+            if (targetBtn) {
+                targetBtn.classList.add('on');
+                $('#' + link.dataset.t).classList.add('on');
+            }
+        };
+    });
+
+    // bascule pc rc
+    $('#tk').onclick = () => {
+        const isPc = document.body.classList.toggle('pc');
+
+        $('#tk').textContent = isPc ? 'Rendre à la télécommande' : 'Prendre la main';
+        $('#mode').textContent = isPc ? 'PC aux commandes · télécommande en veille' : 'Lecture seule · télécommande active';
+        $('#cap').textContent = isPc ? 'PC aux commandes' : 'Télécommande active';
+        $('#bk').textContent = isPc ? 'PC' : 'RC';
+        $('#mode').classList.toggle('or', !isPc);
+
+        $$('.pin').forEach(input => {
+            input.disabled = !isPc;
+        });
+
+        $$('input.pin[type=text]').forEach(input => {
+            input.placeholder = isPc
+                ? 'Commande (ex. M114)'
+                : 'Sortie seule : prends la main pour envoyer une commande';
+        });
+    };
+
+    // maj sliders
+    $$('input[type=range]').forEach(input => {
+        input.oninput = () => {
+            const valEl = input.previousElementSibling.querySelector('b');
+            if (valEl) {
+                valEl.textContent = (+input.value).toFixed(2).replace('.', ',');
+            }
+        };
+    });
+
+    // map lidar
+    const R = [
+        [-2.2, 2],
+        [0.4, 2.6],
+        [2.1, 2.2],
+        [2.5, -0.4],
+        [2, -2.3],
+        [-1.4, -2.6],
+        [-2.5, -1]
+    ];
+
+    const O = [
+        [0.8, 0.6],
+        [1.6, 0.6],
+        [1.6, 1.5],
+        [0.8, 1.5]
+    ];
+
+    function dots(points, scale, radius, color) {
+        let svgStr = '';
+        points.forEach((pt, i) => {
+            const next = points[(i + 1) % points.length];
+            const dist = Math.hypot(next[0] - pt[0], next[1] - pt[1]);
+            const count = Math.floor(dist / 0.1);
+
+            for (let j = 0; j < count; j++) {
+                const ratio = j / count;
+                const posX = pt[0] + (next[0] - pt[0]) * ratio + Math.sin(i * 7 + j) * 0.02;
+                const posY = pt[1] + (next[1] - pt[1]) * ratio + Math.cos(j * 3 + i) * 0.02;
+                const cx = (posX * scale).toFixed(1);
+                const cy = (-posY * scale).toFixed(1);
+                svgStr += `<circle cx="${cx}" cy="${cy}" r="${radius}" fill="${color}"/>`;
+            }
+        });
+        return svgStr;
+    }
+
+    if ($('#m1')) {
+        $('#m1').innerHTML = dots(R, 28, 1.5, '#fff') + dots(O, 28, 1.5, '#fff');
+    }
+    if ($('#m2')) {
+        $('#m2').innerHTML = dots(R, 85, 2.4, '#fff') + dots(O, 85, 2.4, '#F0A93A');
+    }
+
+    // courbes svg
+    function ch(id, series, minVal, maxVal) {
+        const svgEl = $(id);
+        if (!svgEl) return;
+
+        let gridSvg = '';
+        for (let i = 0; i <= 4; i++) {
+            const y = 14 + 172 * i / 4 * 0.93;
+            const val = (maxVal - (maxVal - minVal) * i / 4).toFixed(1);
+            gridSvg += `<line x1="40" x2="560" y1="${y}" y2="${y}" class="gr"/>`;
+            gridSvg += `<text x="0" y="${y + 4}" class="tx">${val}</text>`;
+        }
+
+        series.forEach(s => {
+            let pathD = '';
+            for (let i = 0; i <= 120; i++) {
+                const val = s.f(i / 2);
+                const x = 40 + 520 * i / 120;
+                const y = 14 + 160 * (maxVal - val) / (maxVal - minVal);
+                pathD += (i === 0 ? 'M' : 'L') + x.toFixed(1) + ' ' + y.toFixed(1);
+            }
+            const dashAttr = s.d ? ' stroke-dasharray="6 5"' : '';
+            gridSvg += `<path d="${pathD}" fill="none" stroke="${s.c}" stroke-width="3" stroke-linejoin="round"${dashAttr}/>`;
+        });
+
+        svgEl.innerHTML = gridSvg +
+            '<text x="40" y="198" class="tx">−60 s</text>' +
+            '<text x="560" y="198" class="tx" text-anchor="end">maintenant</text>';
+    }
+
+    ch('#c1', [
+        { c: '#F0A93A', d: 1, f: t => 0 },
+        { c: '#22C3F0', f: t => 3 * Math.sin(t / 2.1) * Math.exp(-t / 35) + 0.25 * Math.sin(t * 2.9) }
+    ], -4, 4);
+
+    ch('#c2', [
+        { c: '#22C3F0', f: t => 0.35 + 0.05 * Math.sin(t / 3) },
+        { c: '#2FB37A', f: t => 0.35 + 0.05 * Math.sin(t / 3 + 0.6) }
+    ], 0, 0.6);
+
+    ch('#c3', [
+        { c: '#22C3F0', f: t => 42 + 12 * Math.sin(t / 2.6) * Math.exp(-t / 45) },
+        { c: '#2FB37A', f: t => 45 + 12 * Math.sin(t / 2.6 + 0.5) * Math.exp(-t / 45) }
+    ], 0, 100);
+
+    // logs console
+    const logsData = [
+        ['OK', '12:41:03', 'Liaison série ouverte · /dev/ttyUSB0 · 115200'],
+        ['INFO', '12:41:04', 'IMU calibrée · biais gyro 0,02 °/s'],
+        ['INFO', '12:41:05', 'Lidar : 360 pts/tour à 8 Hz'],
+        ['OK', '12:41:06', 'Boucle d\'équilibre démarrée · 200 Hz'],
+        ['INFO', '12:41:20', 'Mode : télécommande (RC)'],
+        ['WARN', '12:43:11', 'Paquets perdus : 2 sur 640 (0,3 %)'],
+        ['INFO', '12:44:02', 'Obstacle à 0,42 m · avant gauche'],
+        ['WARN', '12:46:37', 'Batterie 12,1 V · 87 %'],
+        ['ERR', '12:47:15', 'Timeout caméra · image ignorée'],
+        ['INFO', '12:47:16', 'Caméra reprise · 2 Hz']
+    ];
+
+    const logContainer = $('#log');
+    if (logContainer) {
+        logContainer.innerHTML = logsData.map(l =>
+            `<div class="l ${l[0]}"><span>${l[1]}</span><b>${l[0]}</b>${l[2]}</div>`
+        ).join('');
+    }
+
+    $$('.f').forEach(btn => {
+        btn.onclick = () => {
+            if (logContainer) {
+                logContainer.classList.toggle('h' + btn.dataset.f);
+            }
+            btn.style.opacity = btn.style.opacity === '0.5' ? '' : '0.5';
+        };
+    });
 
     // bouton cam
     let cameraActive = false;
@@ -929,41 +1074,23 @@
         };
     }
 
-    // websocket rasp
-    // ip rasp ou localhost
-    const socket = new WebSocket('ws://192.168.1.137:8765');
+    // websocket rasp tailscale
+    const socket = new WebSocket('ws://100.121.63.60:8765');
 
     socket.onopen = () => {
         console.log("Connecté au serveur du Gyrobot !");
     };
 
-    socket.onmessage = (event) => {
-        const donnees = JSON.parse(event.data);
-
-        // maj video
-        if (cameraActive && donnees.image_cam && fluxCam) {
-            fluxCam.src = donnees.image_cam;
-        }
-
-        // maj valeurs
-        const eBat = document.getElementById('val_batterie');
-        if (eBat) eBat.innerText = "12,1 V · " + donnees.batterie + " %";
-
-        const eInc = document.getElementById('val_inclinaison');
-        if (eInc) eInc.innerText = donnees.inclinaison + "°";
-
-        const eVit = document.getElementById('val_vitesses');
-        if (eVit) eVit.innerText = donnees.vitesse_gauche + " / " + donnees.vitesse_droite + " m/s";
-
-        const eLid = document.getElementById('val_lidar');
-        if (eLid) eLid.innerText = donnees.lidar_avant + " m";
-    };
-
     socket.onerror = (err) => {
         console.error("Erreur de connexion WebSocket :", err);
     };
+
     // config cam
-    const resolutions = [[160, 120], [320, 240], [640, 480]];
+    const resolutions = [
+        [160, 120],
+        [320, 240],
+        [640, 480]
+    ];
     let idxRes = 1; // defaut 320x240
 
     const frequences = [2, 5, 10, 20];
@@ -1012,8 +1139,30 @@
             lblAge.innerText = `Latence ${ageSec} s`;
         }
 
+        // maj video
         if (cameraActive && donnees.image_cam && fluxCam) {
             fluxCam.src = donnees.image_cam;
+        }
+
+        // maj valeurs
+        const eBat = document.getElementById('val_batterie');
+        if (eBat && donnees.batterie !== undefined) {
+            eBat.innerText = "12,1 V · " + donnees.batterie + " %";
+        }
+
+        const eInc = document.getElementById('val_inclinaison');
+        if (eInc && donnees.inclinaison !== undefined) {
+            eInc.innerText = donnees.inclinaison + "°";
+        }
+
+        const eVit = document.getElementById('val_vitesses');
+        if (eVit && donnees.vitesse_gauche !== undefined) {
+            eVit.innerText = donnees.vitesse_gauche + " / " + donnees.vitesse_droite + " m/s";
+        }
+
+        const eLid = document.getElementById('val_lidar');
+        if (eLid && donnees.lidar_avant !== undefined) {
+            eLid.innerText = donnees.lidar_avant + " m";
         }
     };
     </script>
