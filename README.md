@@ -45,10 +45,9 @@ The overall system is organized around four cooperating elements:
 
 ```text
 GyroBot/
-├── Datasheet_LiDAR/                   # LiDAR technical datasheets and protocols
 ├── Documentation/                     # Specifications, reports, and architecture
 │   ├── Excel/                         # Project tracking and functional matrices
-│   ├── HMI/                           # Web interface mockups and assets
+│   ├── HMI/                           # Web interface (IHMV1) and dashboard assets
 │   ├── Images/                        # Functional diagrams and system schemes
 │   ├── markdown/                      # Analysis reports (FMEA, CSR, test plans)
 │   └── rapport/                       # Project deliverables and use cases
@@ -61,7 +60,11 @@ GyroBot/
 │   ├── 3D/                            # Robot CAD files and renders (V1, V2)
 │   ├── Code/                          # Embedded firmware (IMU, encoders, drivers)
 │   └── motor_and_elec_schematic/      # Electrical wiring diagrams and motor specs
-└── Simulation/                        # Webots simulation environment
-    ├── controllers/                   # Robot control programs (C++)
-    └── worlds/                        # Simulation scenes and environment models
+├── RPLIDARC1/                         # LiDAR perception subsystem (RPLIDAR C1)
+│   ├── Datasheet_LiDAR/               # Technical datasheets and communication protocols
+│   └── LIDAR_vscode/                  # Python drivers, mapping tools, and serial interface
+├── Simulation/                        # Webots simulation environment
+│   ├── controllers/                   # Robot control programs (C++)
+│   └── worlds/                        # Simulation scenes and environment models
+└── Gyrobot_Gantt_Mis_a_jour.xlsx      # Master project schedule and Gantt chart
 ```

@@ -704,7 +704,7 @@
                         </div>
                     </div>
 
-                    <!-- partie caméra -->
+                    <!-- cam -->
                     <div style="display:grid;gap:14px;align-content:start">
                         <div class="c">
                             <h3>
@@ -880,7 +880,7 @@
         </main>
     </div>
     <script>
-    // Gestion IHM et onglets
+    // onglets
     const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
     $$('.wing button').forEach(b => b.onclick = () => { $$('.wing button,.tab').forEach(x => x.classList.remove('on')); b.classList.add('on'); $('#' + b.dataset.t).classList.add('on') });
     $('#tk').onclick = () => { const p = document.body.classList.toggle('pc'); $('#tk').textContent = p ? 'Rendre à la télécommande' : 'Prendre la main'; $('#mode').textContent = p ? 'PC aux commandes · télécommande en veille' : 'Lecture seule · télécommande active'; $('#cap').textContent = p ? 'PC aux commandes' : 'Télécommande active'; $('#bk').textContent = p ? 'PC' : 'RC'; $('#mode').classList.toggle('or', !p); $$('.pin').forEach(i => { i.disabled = !p }); $$('input.pin[type=text]').forEach(i => i.placeholder = p ? 'Commande (ex. M114)' : 'Sortie seule : prends la main pour envoyer une commande') };
@@ -901,7 +901,7 @@
     $$('.f').forEach(b => b.onclick = () => { $('#log').classList.toggle('h' + b.dataset.f); b.style.opacity = b.style.opacity === '.5' ? '' : '.5' });
     $$('.hit').forEach(g => g.onclick = () => { $$('.wing button,.tab').forEach(x => x.classList.remove('on')); const b = $(`.wing button[data-t="${g.dataset.t}"]`); if (b) { b.classList.add('on'); $('#' + g.dataset.t).classList.add('on') } });
 
-    //Logique bouton Caméra
+    // bouton cam
     let cameraActive = false;
     const btnCam = document.getElementById('btn_cam');
     const fluxCam = document.getElementById('flux_cam');
@@ -929,8 +929,8 @@
         };
     }
 
-    //Connexion au serveur Raspberry Pi
-    // 192.168.1.137 ou 'localhost' si nav tourne directement sur rasp
+    // websocket rasp
+    // ip rasp ou localhost
     const socket = new WebSocket('ws://192.168.1.137:8765');
 
     socket.onopen = () => {
@@ -940,12 +940,12 @@
     socket.onmessage = (event) => {
         const donnees = JSON.parse(event.data);
 
-        // Maj de la vidéo si allumée
+        // maj video
         if (cameraActive && donnees.image_cam && fluxCam) {
             fluxCam.src = donnees.image_cam;
         }
 
-        // Maj des valeurs texte
+        // maj valeurs
         const eBat = document.getElementById('val_batterie');
         if (eBat) eBat.innerText = "12,1 V · " + donnees.batterie + " %";
 
@@ -962,12 +962,12 @@
     socket.onerror = (err) => {
         console.error("Erreur de connexion WebSocket :", err);
     };
-    //Réglages cam
+    // config cam
     const resolutions = [[160, 120], [320, 240], [640, 480]];
-    let idxRes = 1; // Par défaut : 320x240
+    let idxRes = 1; // defaut 320x240
 
     const frequences = [2, 5, 10, 20];
-    let idxFps = 1; // Par défaut : 2 Hz
+    let idxFps = 1; // defaut 2 Hz
 
     const btnRes = document.getElementById('btn_res');
     const btnFps = document.getElementById('btn_fps');
@@ -983,7 +983,7 @@
         }
     }
 
-    // bascule : 160x120 -> 320x240 -> 640x480
+    // switch resolution
     if (btnRes) {
         btnRes.onclick = () => {
             idxRes = (idxRes + 1) % resolutions.length;
@@ -993,7 +993,7 @@
         };
     }
 
-    //bascule : 2 Hz -> 5 Hz -> 10 Hz -> 20 Hz
+    // switch fps
     if (btnFps) {
         btnFps.onclick = () => {
             idxFps = (idxFps + 1) % frequences.length;
@@ -1002,11 +1002,11 @@
         };
     }
 
-    //gestionnaire de reception des messages WebSockets
+    // reception websocket
     socket.onmessage = (event) => {
         const donnees = JSON.parse(event.data);
 
-        // Calcul en temps réel latence image
+        // calcul latence
         if (donnees.timestamp && lblAge) {
             const ageSec = ((Date.now() - donnees.timestamp) / 1000).toFixed(1);
             lblAge.innerText = `Latence ${ageSec} s`;
